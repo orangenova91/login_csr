@@ -2,8 +2,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { getTranslations } from "@/lib/i18n";
-import { Button } from "@/components/ui/Button";
-import Link from "next/link";
+import CreateClassPopupButton from "@/components/dashboard/CreateClassPopupButton";
 
 export default async function ManageClassesPage() {
   const session = await getServerSession(authOptions);
@@ -22,9 +21,7 @@ export default async function ManageClassesPage() {
   return (
     <div>
         <div className="flex justify-end mb-4">
-          <Button variant="primary">
-          <Link href="/create-class">수업 생성</Link>
-          </Button>
+          <CreateClassPopupButton />
         </div>
       <div className="border-4 border-dashed border-gray-200 rounded-lg p-8 bg-white space-y-6">
         <header>
