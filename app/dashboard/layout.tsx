@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { getTranslations } from "@/lib/i18n";
 import SignOutButton from "@/components/dashboard/SignOutButton";
+import { Sidebar } from "@/components/dashboard/Sidebar";
 
 export default async function DashboardLayout({
   children,
@@ -17,6 +18,50 @@ export default async function DashboardLayout({
   }
 
   const t = getTranslations("ko");
+  const role = session.user.role;
+
+  const navItems =
+    role === "teacher"
+      ? [
+          { href: "/dashboard/teacher", label: t.sidebar.teacher.overview },
+          {
+            href: "/dashboard/teacher/manage-classes",
+            label: t.sidebar.teacher.manageClasses,
+          },
+          {
+            href: "/dashboard/teacher/student-progress",
+            label: t.sidebar.teacher.studentProgress,
+          },
+          {
+            href: "/dashboard/teacher/announcements",
+            label: t.sidebar.teacher.announcements,
+          },
+          {
+            href: "/dashboard/teacher/schedule",
+            label: t.sidebar.teacher.schedule,
+          },
+        ]
+      : role === "student"
+      ? [
+          { href: "/dashboard/student", label: t.sidebar.student.overview },
+          {
+            href: "/dashboard/student/schedule",
+            label: t.sidebar.student.todaysSchedule,
+          },
+          {
+            href: "/dashboard/student/assignments",
+            label: t.sidebar.student.assignments,
+          },
+          {
+            href: "/dashboard/student/announcements",
+            label: t.sidebar.student.announcements,
+          },
+          {
+            href: "/dashboard/student/support",
+            label: t.sidebar.student.support,
+          },
+        ]
+      : [];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -37,7 +82,10 @@ export default async function DashboardLayout({
       </nav>
 
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        {children}
+        <div className="flex flex-col md:flex-row md:items-start gap-6">
+          <Sidebar items={navItems} />
+          <section className="flex-1 w-full">{children}</section>
+        </div>
       </main>
     </div>
   );

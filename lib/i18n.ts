@@ -113,6 +113,22 @@ export const translations = {
       missingRoleDescription:
         "관리자에게 문의하여 프로필에 역할을 등록하거나, 회원가입 시 역할을 선택했는지 확인해주세요.",
     },
+    sidebar: {
+      teacher: {
+        overview: "대시보드 홈",
+        manageClasses: "수업 관리",
+        studentProgress: "학생 성과",
+        announcements: "공지 관리",
+        schedule: "일정 보기",
+      },
+      student: {
+        overview: "대시보드 홈",
+        todaysSchedule: "오늘의 일정",
+        assignments: "과제 확인",
+        announcements: "공지 보기",
+        support: "문의하기",
+      },
+    },
   },
   en: {
     auth: {
@@ -224,6 +240,22 @@ export const translations = {
       missingRoleTitle: "Role information required",
       missingRoleDescription:
         "Please contact your administrator to update your profile or make sure you selected a role during sign-up.",
+    },
+    sidebar: {
+      teacher: {
+        overview: "Overview",
+        manageClasses: "Manage Classes",
+        studentProgress: "Student Progress",
+        announcements: "Announcements",
+        schedule: "Schedule",
+      },
+      student: {
+        overview: "Overview",
+        todaysSchedule: "Today's Schedule",
+        assignments: "Assignments",
+        announcements: "Announcements",
+        support: "Support",
+      },
     },
   },
 } as const;
