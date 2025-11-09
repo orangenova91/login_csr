@@ -67,6 +67,51 @@ export const translations = {
       role: "역할",
       roleStudent: "학생",
       roleTeacher: "선생님",
+      teacherTitle: "교사용 대시보드",
+      teacherDescription: "수업과 학생 관리를 한곳에서 확인하세요.",
+      teacherSections: {
+        manageClasses: {
+          title: "수업 관리",
+          description: "담당 수업 일정과 과제를 관리하세요.",
+          action: "수업 관리 열기",
+        },
+        studentProgress: {
+          title: "학생 성과",
+          description: "학생별 성취도와 제출 현황을 확인할 수 있습니다.",
+          action: "학생 리포트 보기",
+        },
+        announcements: {
+          title: "공지 사항",
+          description: "학사 일정, 회의, 공지를 등록하고 공유하세요.",
+          action: "공지 작성",
+        },
+      },
+      teacherScheduleTitle: "다가오는 일정",
+      teacherScheduleEmpty: "등록된 일정이 없습니다. 새 수업을 추가해보세요.",
+      studentTitle: "학생용 대시보드",
+      studentDescription: "오늘 할 일과 수업 일정을 빠르게 확인하세요.",
+      studentSections: {
+        todaysSchedule: {
+          title: "오늘의 일정",
+          description: "오늘 예정된 수업과 활동을 확인하세요.",
+        },
+        assignments: {
+          title: "제출해야 할 과제",
+          description: "마감 기한이 임박한 과제를 정리했습니다.",
+        },
+        announcements: {
+          title: "공지 사항",
+          description: "최근 등록된 공지를 확인하세요.",
+        },
+      },
+      studentScheduleTitle: "오늘의 수업",
+      studentScheduleEmpty: "오늘 예정된 수업이 없습니다. 자유 시간을 계획해보세요.",
+      studentAssignmentsTitle: "마감 임박 과제",
+      studentAssignmentsEmpty: "제출해야 할 과제가 없습니다. 수고하셨어요!",
+      studentAnnouncementsTitle: "최근 공지",
+      missingRoleTitle: "역할 정보가 필요합니다",
+      missingRoleDescription:
+        "관리자에게 문의하여 프로필에 역할을 등록하거나, 회원가입 시 역할을 선택했는지 확인해주세요.",
     },
   },
   en: {
@@ -132,6 +177,53 @@ export const translations = {
       role: "Role",
       roleStudent: "Student",
       roleTeacher: "Teacher",
+      teacherTitle: "Teacher Dashboard",
+      teacherDescription: "Keep track of your classes and students in one place.",
+      teacherSections: {
+        manageClasses: {
+          title: "Manage Classes",
+          description: "Review upcoming lessons and assignments.",
+          action: "Open Class Manager",
+        },
+        studentProgress: {
+          title: "Student Progress",
+          description: "Monitor individual student performance and submissions.",
+          action: "View Reports",
+        },
+        announcements: {
+          title: "Announcements",
+          description: "Post updates and important notices for your classes.",
+          action: "Create Announcement",
+        },
+      },
+      teacherScheduleTitle: "Upcoming Schedule",
+      teacherScheduleEmpty:
+        "No events planned yet. Add a new class to get started.",
+      studentTitle: "Student Dashboard",
+      studentDescription: "See what’s happening today at a glance.",
+      studentSections: {
+        todaysSchedule: {
+          title: "Today's Schedule",
+          description: "Check your upcoming classes and activities.",
+        },
+        assignments: {
+          title: "Assignments to Submit",
+          description: "Stay on top of due dates and submissions.",
+        },
+        announcements: {
+          title: "Announcements",
+          description: "Catch up on the latest updates from your teachers.",
+        },
+      },
+      studentScheduleTitle: "Today's Classes",
+      studentScheduleEmpty: "No classes scheduled today. Enjoy your downtime!",
+      studentAssignmentsTitle: "Approaching Deadlines",
+      studentAssignmentsEmpty:
+        "You have no pending assignments. Great job!",
+      studentAnnouncementsTitle: "Latest Announcements",
+      missingRoleTitle: "Role information required",
+      missingRoleDescription:
+        "Please contact your administrator to update your profile or make sure you selected a role during sign-up.",
     },
   },
 } as const;
