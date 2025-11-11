@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import CourseTabs from "@/components/dashboard/CourseTabs";
 import StudentManager from "@/components/dashboard/StudentManager";
 import SelectedStudentsTable from "@/components/dashboard/SelectedStudentsTable";
+import AttendanceTable from "@/components/dashboard/AttendanceTable";
 
 interface ManageClassDetailPageProps {
   params: {
@@ -135,7 +136,8 @@ export default async function ManageClassDetailPage({
                 <h2 className="text-lg font-semibold text-gray-900">학생 출결 관리</h2>
               </header>
               <StudentManager courseId={course.id} students={students} />
-              <SelectedStudentsTable courseId={course.id} students={students} />
+              {/* <SelectedStudentsTable courseId={course.id} students={students} /> */}
+              <AttendanceTable courseId={course.id} students={students} />
             </article>,
             <article
               key="assignments"
