@@ -23,7 +23,10 @@ export default async function DashboardLayout({
   const navItems =
     role === "teacher"
       ? [
-          { href: "/dashboard/teacher", label: t.sidebar.teacher.overview },
+          { 
+            href: "/dashboard/teacher", 
+            label: t.sidebar.teacher.overview 
+          },
           {
             href: "/dashboard/teacher/manage-classes",
             label: t.sidebar.teacher.manageClasses,
@@ -43,7 +46,10 @@ export default async function DashboardLayout({
         ]
       : role === "student"
       ? [
-          { href: "/dashboard/student", label: t.sidebar.student.overview },
+          { 
+            href: "/dashboard/student", 
+            label: t.sidebar.student.overview 
+          },
           {
             href: "/dashboard/student/schedule",
             label: t.sidebar.student.todaysSchedule,

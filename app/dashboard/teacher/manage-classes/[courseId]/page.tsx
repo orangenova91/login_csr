@@ -5,6 +5,8 @@ import { notFound, redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import CourseTabs from "@/components/dashboard/CourseTabs";
+import StudentManager from "@/components/dashboard/StudentManager";
+import SelectedStudentsTable from "@/components/dashboard/SelectedStudentsTable";
 
 interface ManageClassDetailPageProps {
   params: {
@@ -49,6 +51,13 @@ export default async function ManageClassDetailPage({
   if (!course) {
     notFound();
   }
+
+  const students =
+    (await (prisma as any).user.findMany({
+      where: { role: "student" },
+      select: { id: true, name: true, email: true },
+      orderBy: { createdAt: "desc" },
+    })) ?? [];
 
   const getGradeLabel = (grade: string | null) => {
     switch (grade) {
@@ -124,14 +133,9 @@ export default async function ManageClassDetailPage({
             >
               <header className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-gray-900">학생 출결 관리</h2>
-                <span className="text-xs font-medium text-gray-500">예정 기능</span>
               </header>
-              <p className="text-sm text-gray-600">
-                출석부, 결석 사유 기록, 지각/조퇴 현황 등을 추적할 수 있도록 구성합니다.
-              </p>
-              <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-500">
-                TODO: 출결 현황 차트, 학생 목록 테이블, 출결 기록 입력 폼 등
-              </div>
+              <StudentManager courseId={course.id} students={students} />
+              <SelectedStudentsTable courseId={course.id} students={students} />
             </article>,
             <article
               key="assignments"
