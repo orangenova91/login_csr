@@ -32,6 +32,7 @@ model User {
   // Relations
   accounts Account[]
   sessions Session[]
+  classes  Course[]  @relation("TeacherCourses")
 
   @@map("users")
 }
@@ -74,5 +75,19 @@ model VerificationToken {
 
   @@unique([identifier, token])
   @@map("verification_tokens")
+}
+
+model Course {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  subject    String
+  grade      String
+  instructor String
+  classroom  String
+  teacherId  String?  @db.ObjectId
+  teacher    User?    @relation("TeacherCourses", fields: [teacherId], references: [id], onDelete: SetNull)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("classes")
 }
 

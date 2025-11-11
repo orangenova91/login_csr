@@ -1,6 +1,4 @@
 "use client";
-
-import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,10 +15,6 @@ const formSchema = z.object({
   grade: z
     .string()
     .min(1, "대상 학년을 선택하세요"),
-  instructor: z
-    .string()
-    .min(1, "강사명을 입력하세요")
-    .max(50, "강사명은 50자 이하여야 합니다"),
   classroom: z
     .string()
     .min(1, "강의실을 입력하세요")
@@ -36,41 +30,81 @@ const gradeOptions = [
   { value: "3", label: "3학년" },
 ];
 
+type CreateClassFormProps = {
+  instructorName: string;
+  onSuccess?: () => void;
+  onCreated?: (course: {
+    id: string;
+    subject: string;
+    grade: string;
+    instructor: string;
+    classroom: string;
+    createdAt: string;
+  }) => void;
+};
+
 export default function CreateClassForm({
   instructorName,
-}: {
-  instructorName: string;
-}) {
+  onSuccess,
+  onCreated,
+}: CreateClassFormProps) {
   const { showToast } = useToastContext();
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
     reset,
-    setValue,
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       subject: "",
       grade: "",
-      instructor: instructorName,
       classroom: "",
     },
   });
 
-  useEffect(() => {
-    setValue("instructor", instructorName);
-  }, [instructorName, setValue]);
-
   const onSubmit = async (values: FormValues) => {
     try {
-      // TODO: API 연동
-      console.log("create class payload", values);
-      showToast("수업이 임시로 저장되었습니다. 곧 API와 연동하세요.", "success");
-      reset({ ...values, instructor: instructorName });
+      const payload = {
+        ...values,
+        instructor: instructorName,
+      };
+
+      const response = await fetch("/api/classes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const responseBody = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        const errorMessage =
+          responseBody?.error ??
+          "수업 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
+        throw new Error(errorMessage);
+      }
+
+      if (responseBody?.class) {
+        onCreated?.(responseBody.class);
+      }
+
+      showToast("수업이 생성되었습니다.", "success");
+      reset({
+        subject: "",
+        grade: "",
+        classroom: "",
+      });
+      onSuccess?.();
     } catch (error) {
       console.error(error);
-      showToast("수업 생성 중 오류가 발생했습니다.", "error");
+      const message =
+        error instanceof Error
+          ? error.message
+          : "수업 생성 중 오류가 발생했습니다.";
+      showToast(message, "error");
     }
   };
 
@@ -99,11 +133,11 @@ export default function CreateClassForm({
 
       <div className="grid gap-6 sm:grid-cols-2">
         <Input
-          {...register("instructor")}
+          value={instructorName}
           label="강사명"
-          placeholder="담당 교사를 입력하세요"
-          error={errors.instructor?.message}
-          aria-required="true"
+          readOnly
+          aria-readonly="true"
+          tabIndex={-1}
         />
         <Input
           {...register("classroom")}
@@ -115,7 +149,13 @@ export default function CreateClassForm({
       </div>
 
       <div className="flex justify-end gap-3">
-        <Button type="button" variant="outline" onClick={() => reset({ instructor: instructorName, subject: "", grade: "", classroom: "" })}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() =>
+            reset({ subject: "", grade: "", classroom: "" })
+          }
+        >
           초기화
         </Button>
         <Button type="submit" isLoading={isSubmitting}>
