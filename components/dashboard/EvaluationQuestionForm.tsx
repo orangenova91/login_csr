@@ -1,0 +1,521 @@
+"use client";
+
+import { useState } from "react";
+import { useForm, useFieldArray } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { useToastContext } from "@/components/providers/ToastProvider";
+
+const optionSchema = z.object({
+  text: z.string().trim().min(1, "보기 내용을 입력하세요"),
+});
+
+const singleQuestionSchema = z
+  .object({
+    questionType: z.enum(["객관식", "서술형"], {
+      required_error: "문제 유형을 선택하세요",
+    }),
+    questionText: z
+      .string()
+      .trim()
+      .min(1, "문제 지문을 입력하세요")
+      .max(2000, "문제 지문은 2000자 이하여야 합니다"),
+    points: z
+      .number()
+      .min(1, "배점은 1점 이상이어야 합니다")
+      .max(100, "배점은 100점 이하여야 합니다"),
+    options: z.array(optionSchema).optional(),
+    correctAnswer: z.number().optional(),
+    modelAnswer: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.questionType === "객관식") {
+        return (
+          data.options &&
+          data.options.length >= 2 &&
+          data.options.length <= 10 &&
+          data.correctAnswer !== undefined &&
+          data.correctAnswer >= 0
+        );
+      }
+      return true;
+    },
+    {
+      message: "객관식 문항은 최소 2개의 보기와 정답이 필요합니다",
+      path: ["options"],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.questionType === "서술형") {
+        return (
+          data.modelAnswer &&
+          data.modelAnswer.trim().length > 0
+        );
+      }
+      return true;
+    },
+    {
+      message: "서술형 문항은 모범답안을 입력해야 합니다",
+      path: ["modelAnswer"],
+    }
+  );
+
+const questionsSchema = z.object({
+  unit: z
+    .string()
+    .trim()
+    .min(1, "평가 단원을 입력하세요")
+    .max(100, "평가 단원은 100자 이하여야 합니다"),
+  questionNumber: z
+    .string()
+    .trim()
+    .min(1, "문제 주문번호를 입력하세요")
+    .max(50, "문제 주문번호는 50자 이하여야 합니다"),
+  questions: z.array(singleQuestionSchema).min(1, "최소 1개의 문항이 필요합니다"),
+});
+
+type QuestionsFormValues = z.infer<typeof questionsSchema>;
+
+interface EvaluationQuestionFormProps {
+  courseId: string;
+  onSuccess?: () => void;
+}
+
+export default function EvaluationQuestionForm({
+  courseId,
+  onSuccess,
+}: EvaluationQuestionFormProps) {
+  const { showToast } = useToastContext();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors },
+    reset,
+    watch,
+    setValue,
+    getValues,
+  } = useForm<QuestionsFormValues>({
+    resolver: zodResolver(questionsSchema),
+    defaultValues: {
+      unit: "",
+      questionNumber: "",
+      questions: [
+        {
+          questionType: "객관식" as const,
+          questionText: "",
+          points: 1,
+          options: [{ text: "" }, { text: "" }],
+          correctAnswer: -1,
+        },
+      ],
+    },
+  });
+
+  const {
+    fields: questionFields,
+    append: appendQuestion,
+    remove: removeQuestion,
+  } = useFieldArray({
+    control,
+    name: "questions",
+  });
+
+  const watchedQuestions = watch("questions");
+
+  const addQuestion = () => {
+    appendQuestion({
+      questionType: "객관식" as const,
+      questionText: "",
+      points: 1,
+      options: [{ text: "" }, { text: "" }],
+      correctAnswer: -1,
+    });
+  };
+
+  const removeQuestionHandler = (index: number) => {
+    if (questionFields.length > 1) {
+      removeQuestion(index);
+    } else {
+      showToast("최소 1개의 문항이 필요합니다.", "error");
+    }
+  };
+
+  const onSubmit = async (values: QuestionsFormValues) => {
+    try {
+      setIsSubmitting(true);
+
+      // TODO: API 연동
+      console.log("Create evaluation questions:", {
+        courseId,
+        questions: values.questions,
+      });
+
+      showToast(`${values.questions.length}개의 평가 문항이 생성되었습니다.`, "success");
+      reset({
+        unit: "",
+        questionNumber: "",
+        questions: [
+          {
+            questionType: "객관식" as const,
+            questionText: "",
+            points: 1,
+            options: [{ text: "" }, { text: "" }],
+            correctAnswer: -1,
+          },
+        ],
+      });
+      onSuccess?.();
+    } catch (error) {
+      console.error(error);
+      const message =
+        error instanceof Error
+          ? error.message
+          : "평가 문항 생성 중 오류가 발생했습니다.";
+      showToast(message, "error");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
+      {/* 평가 단원과 문제 주문번호 - 상단에 한 번만 */}
+      <div className="grid gap-6 sm:grid-cols-2">
+        <Input
+          {...register("unit")}
+          label="평가 단원"
+          placeholder="예: 1단원 - 수와 연산"
+          error={errors.unit?.message}
+          aria-required="true"
+        />
+        <Input
+          {...register("questionNumber")}
+          label="문제 주문번호"
+          placeholder="예: 1234"
+          error={errors.questionNumber?.message}
+          aria-required="true"
+        />
+      </div>
+
+      <div className="border-t border-gray-200"></div>
+
+      {/* 문항들 - 문제 지문과 보기만 */}
+      {questionFields.map((questionField, questionIndex) => {
+        const questionType = watchedQuestions[questionIndex]?.questionType || "객관식";
+        const questionOptions = watchedQuestions[questionIndex]?.options || [];
+        const questionCorrectAnswer = watchedQuestions[questionIndex]?.correctAnswer ?? -1;
+
+        const addOption = () => {
+          const currentOptions = getValues(`questions.${questionIndex}.options`) || [];
+          if (currentOptions.length < 10) {
+            setValue(`questions.${questionIndex}.options`, [
+              ...currentOptions,
+              { text: "" },
+            ]);
+          } else {
+            showToast("최대 10개의 보기까지 추가할 수 있습니다.", "error");
+          }
+        };
+
+        const removeOptionHandler = (optionIndex: number) => {
+          const currentOptions = getValues(`questions.${questionIndex}.options`) || [];
+          if (currentOptions.length > 2) {
+            const newOptions = currentOptions.filter((_, idx) => idx !== optionIndex);
+            setValue(`questions.${questionIndex}.options`, newOptions);
+            // 정답 인덱스 조정
+            if (questionCorrectAnswer === optionIndex) {
+              setValue(`questions.${questionIndex}.correctAnswer`, -1);
+            } else if (questionCorrectAnswer > optionIndex) {
+              setValue(
+                `questions.${questionIndex}.correctAnswer`,
+                questionCorrectAnswer - 1
+              );
+            }
+          } else {
+            showToast("최소 2개의 보기가 필요합니다.", "error");
+          }
+        };
+
+        return (
+          <div
+            key={questionField.id}
+            className="space-y-6 p-6 border border-gray-200 rounded-xl bg-gray-50"
+          >
+            <div className="flex items-center justify-between">
+              <h4 className="text-base font-semibold text-gray-900">
+                문항 {questionIndex + 1}
+              </h4>
+              {questionFields.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => removeQuestionHandler(questionIndex)}
+                  className="text-red-600 hover:text-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 rounded px-2 py-1 text-sm font-medium"
+                >
+                  문항 삭제
+                </button>
+              )}
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label
+                  htmlFor={`questionText-${questionIndex}`}
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  문제 지문 <span className="text-red-500">*</span>
+                </label>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <label
+                      htmlFor={`questionType-${questionIndex}`}
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      문제 유형:
+                    </label>
+                    <select
+                      {...register(`questions.${questionIndex}.questionType`)}
+                      id={`questionType-${questionIndex}`}
+                    onChange={(e) => {
+                      setValue(`questions.${questionIndex}.questionType`, e.target.value as "객관식" | "서술형");
+                      // 서술형으로 변경하면 보기와 정답 초기화, 모범답안 초기화
+                      if (e.target.value === "서술형") {
+                        setValue(`questions.${questionIndex}.options`, undefined);
+                        setValue(`questions.${questionIndex}.correctAnswer`, undefined);
+                        setValue(`questions.${questionIndex}.modelAnswer`, "");
+                      } else {
+                        // 객관식으로 변경하면 기본 보기 추가, 모범답안 초기화
+                        const currentOptions = getValues(`questions.${questionIndex}.options`);
+                        if (!currentOptions || currentOptions.length === 0) {
+                          setValue(`questions.${questionIndex}.options`, [{ text: "" }, { text: "" }]);
+                          setValue(`questions.${questionIndex}.correctAnswer`, -1);
+                        }
+                        setValue(`questions.${questionIndex}.modelAnswer`, undefined);
+                      }
+                    }}
+                      className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                    >
+                      <option value="객관식">객관식</option>
+                      <option value="서술형">서술형</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label
+                      htmlFor={`points-${questionIndex}`}
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      배점:
+                    </label>
+                    <input
+                      {...register(`questions.${questionIndex}.points`, {
+                        valueAsNumber: true,
+                      })}
+                      id={`points-${questionIndex}`}
+                      type="number"
+                      min="1"
+                      max="100"
+                      className="w-20 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                      placeholder="점수"
+                    />
+                    <span className="text-sm text-gray-600">점</span>
+                  </div>
+                </div>
+              </div>
+              <textarea
+                {...register(`questions.${questionIndex}.questionText`)}
+                id={`questionText-${questionIndex}`}
+                rows={4}
+                className="flex w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="문제 지문을 입력하세요..."
+              />
+              {errors.questions?.[questionIndex]?.questionText && (
+                <p className="mt-1 text-sm text-red-600" role="alert">
+                  {errors.questions[questionIndex]?.questionText?.message}
+                </p>
+              )}
+              {errors.questions?.[questionIndex]?.questionType && (
+                <p className="mt-1 text-sm text-red-600" role="alert">
+                  {errors.questions[questionIndex]?.questionType?.message}
+                </p>
+              )}
+              {errors.questions?.[questionIndex]?.points && (
+                <p className="mt-1 text-sm text-red-600" role="alert">
+                  {errors.questions[questionIndex]?.points?.message}
+                </p>
+              )}
+            </div>
+
+            {questionType === "객관식" && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-medium text-gray-700">
+                    객관식 보기 <span className="text-red-500">*</span>
+                  </label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={addOption}
+                    className="text-xs"
+                  >
+                    + 보기 추가
+                  </Button>
+                </div>
+
+                {questionOptions.map((option, optionIndex) => (
+                <div key={`${questionIndex}-${optionIndex}`} className="flex items-start gap-3">
+                  <div className="flex items-center pt-2">
+                    <input
+                      type="radio"
+                      id={`correct-${questionIndex}-${optionIndex}`}
+                      name={`correctAnswer-${questionIndex}`}
+                      value={optionIndex}
+                      checked={questionCorrectAnswer === optionIndex}
+                      onChange={(e) =>
+                        setValue(
+                          `questions.${questionIndex}.correctAnswer`,
+                          parseInt(e.target.value)
+                        )
+                      }
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                    />
+                    <label
+                      htmlFor={`correct-${questionIndex}-${optionIndex}`}
+                      className="ml-2 text-sm font-medium text-gray-700"
+                    >
+                      정답
+                    </label>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-700 min-w-[2rem]">
+                        {optionIndex + 1}번
+                      </span>
+                      <Input
+                        {...register(
+                          `questions.${questionIndex}.options.${optionIndex}.text`
+                        )}
+                        placeholder={`보기 ${optionIndex + 1} 내용을 입력하세요`}
+                        error={
+                          errors.questions?.[questionIndex]?.options?.[optionIndex]
+                            ?.text?.message
+                        }
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
+                  {questionOptions.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() => removeOptionHandler(optionIndex)}
+                      className="mt-2 text-red-600 hover:text-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 rounded p-1"
+                      aria-label="보기 삭제"
+                    >
+                      <svg
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              ))}
+
+              {errors.questions?.[questionIndex]?.options &&
+                typeof errors.questions[questionIndex]?.options === "object" &&
+                "message" in errors.questions[questionIndex]?.options && (
+                  <p className="text-sm text-red-600" role="alert">
+                    {
+                      (errors.questions[questionIndex]?.options as any)
+                        ?.message as string
+                    }
+                  </p>
+                )}
+                {errors.questions?.[questionIndex]?.correctAnswer && (
+                  <p className="text-sm text-red-600" role="alert">
+                    {errors.questions[questionIndex]?.correctAnswer?.message}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {questionType === "서술형" && (
+              <div className="space-y-4">
+                <div>
+                  <label
+                    htmlFor={`modelAnswer-${questionIndex}`}
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    모범답안 <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    {...register(`questions.${questionIndex}.modelAnswer`)}
+                    id={`modelAnswer-${questionIndex}`}
+                    rows={6}
+                    className="flex w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    placeholder="서술형 문제의 모범답안을 입력하세요..."
+                    aria-required="true"
+                  />
+                  {errors.questions?.[questionIndex]?.modelAnswer && (
+                    <p className="mt-1 text-sm text-red-600" role="alert">
+                      {errors.questions[questionIndex]?.modelAnswer?.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      <div className="flex justify-between items-center pt-4 border-t border-gray-200">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={addQuestion}
+        >
+          + 문제 추가하기
+        </Button>
+        <div className="flex gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              reset({
+                unit: "",
+                questionNumber: "",
+                questions: [
+                  {
+                    questionType: "객관식" as const,
+                    questionText: "",
+                    points: 1,
+                    options: [{ text: "" }, { text: "" }],
+                    correctAnswer: -1,
+                  },
+                ],
+              });
+            }}
+          >
+            초기화
+          </Button>
+          <Button type="submit" isLoading={isSubmitting}>
+            문항 생성하기
+          </Button>
+        </div>
+      </div>
+    </form>
+  );
+}

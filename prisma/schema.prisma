@@ -78,16 +78,35 @@ model VerificationToken {
 }
 
 model Course {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  subject    String
-  grade      String
-  instructor String
-  classroom  String
-  teacherId  String?  @db.ObjectId
-  teacher    User?    @relation("TeacherCourses", fields: [teacherId], references: [id], onDelete: SetNull)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  subject     String
+  grade       String
+  instructor  String
+  classroom   String
+  teacherId   String?       @db.ObjectId
+  teacher     User?         @relation("TeacherCourses", fields: [teacherId], references: [id], onDelete: SetNull)
+  assignments Assignment[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 
   @@map("classes")
+}
+
+model Assignment {
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  title            String
+  description      String?
+  filePath         String?   // 서버에 저장된 파일 경로
+  originalFileName String?   // 원본 파일명
+  fileSize         Int?      // 파일 크기 (bytes)
+  mimeType         String?   // 파일 MIME 타입
+  dueDate          DateTime? // 마감일 (선택적)
+  courseId         String    @db.ObjectId
+  course           Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  teacherId        String    @db.ObjectId
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@map("assignments")
 }
 

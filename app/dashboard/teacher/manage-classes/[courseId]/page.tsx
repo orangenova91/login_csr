@@ -8,6 +8,8 @@ import CourseTabs from "@/components/dashboard/CourseTabs";
 import StudentManager from "@/components/dashboard/StudentManager";
 import SelectedStudentsTable from "@/components/dashboard/SelectedStudentsTable";
 import AttendanceTable from "@/components/dashboard/AttendanceTable";
+import AssignmentManager from "@/components/dashboard/AssignmentManager";
+import StudentEvaluation from "@/components/dashboard/StudentEvaluation";
 
 interface ManageClassDetailPageProps {
   params: {
@@ -124,7 +126,7 @@ export default async function ManageClassDetailPage({
           tabs={[
             { id: "attendance", label: "학생 출결 관리" },
             { id: "assignments", label: "수업 과제 관리" },
-            { id: "notes", label: "수업 노트" },
+            { id: "notes", label: "학생 평가" },
           ]}
         >
           {[
@@ -145,29 +147,17 @@ export default async function ManageClassDetailPage({
             >
               <header className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-gray-900">수업 과제 관리</h2>
-                <span className="text-xs font-medium text-gray-500">예정 기능</span>
               </header>
-              <p className="text-sm text-gray-600">
-                과제를 생성하고 제출 파일을 확인하며 피드백을 남길 수 있는 공간을 구성할 예정입니다.
-              </p>
-              <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-500">
-                TODO: 과제 등록 폼, 제출 현황, 피드백 기록 등
-              </div>
+              <AssignmentManager courseId={course.id} />
             </article>,
             <article
               key="notes"
               className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-4"
             >
               <header className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">수업 노트 & 커뮤니케이션</h2>
-                <span className="text-xs font-medium text-gray-500">예정 기능</span>
+                <h2 className="text-lg font-semibold text-gray-900">학생 평가</h2>
               </header>
-              <p className="text-sm text-gray-600">
-                수업 기록, 공지사항, 학생/보호자와의 소통을 위한 기능을 확장할 수 있습니다.
-              </p>
-              <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-500">
-                TODO: 노트 작성, 공지 발행, 메시지 로그 등
-              </div>
+              <StudentEvaluation courseId={course.id} />
             </article>,
           ]}
         </CourseTabs>
