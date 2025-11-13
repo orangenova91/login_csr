@@ -10,6 +10,7 @@ import SelectedStudentsTable from "@/components/dashboard/SelectedStudentsTable"
 import AttendanceTable from "@/components/dashboard/AttendanceTable";
 import AssignmentManager from "@/components/dashboard/AssignmentManager";
 import StudentEvaluation from "@/components/dashboard/StudentEvaluation";
+import CourseSettings from "@/components/dashboard/CourseSettings";
 
 interface ManageClassDetailPageProps {
   params: {
@@ -146,12 +147,13 @@ export default async function ManageClassDetailPage({
       <section>
         <CourseTabs
           tabs={[
-            { id: "overview", label: "수업 개요" },
+            { id: "overview", label: "수업 소개" },
             { id: "announcements", label: "공지사항" },
-            { id: "attendance", label: "학생 출결 관리" },
-            { id: "assignments", label: "수업 과제 관리" },
+            { id: "attendance", label: "학생 출결" },
+            { id: "assignments", label: "수업 과제" },
             { id: "notes", label: "학생 평가" },
             { id: "record", label: "생기부" },
+            { id: "settings", label: "설정" },
           ]}
         >
           {[
@@ -160,7 +162,7 @@ export default async function ManageClassDetailPage({
               className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-4"
             >
               <header className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">수업 개요</h2>
+                <h2 className="text-lg font-semibold text-gray-900">수업 소개</h2>
               </header>
               <div className="space-y-6">
                 {/* 기본 정보 섹션 */}
@@ -283,9 +285,8 @@ export default async function ManageClassDetailPage({
               className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-4"
             >
               <header className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">학생 출결 관리</h2>
-              </header>
-              <StudentManager courseId={course.id} students={students} />
+                <h2 className="text-lg font-semibold text-gray-900">학생 출결</h2>
+              </header>           <StudentManager courseId={course.id} students={students} />
               {/* <SelectedStudentsTable courseId={course.id} students={students} /> */}
               <AttendanceTable courseId={course.id} students={students} />
             </article>,
@@ -294,7 +295,7 @@ export default async function ManageClassDetailPage({
               className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-4"
             >
               <header className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">수업 과제 관리</h2>
+                <h2 className="text-lg font-semibold text-gray-900">수업 과제</h2>
               </header>
               <AssignmentManager courseId={course.id} />
             </article>,
@@ -318,6 +319,20 @@ export default async function ManageClassDetailPage({
                 <div className="text-sm text-gray-600">
                   <p>생기부 내용이 여기에 표시됩니다.</p>
                 </div>
+              </div>
+            </article>,
+            <article
+              key="settings"
+              className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-4"
+            >
+              <header className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900">설정</h2>
+              </header>
+              <div className="space-y-6">
+                <div className="text-sm text-gray-600">
+                  <p>수업과 관련된 위험 작업을 관리합니다.</p>
+                </div>
+                <CourseSettings courseId={course.id} courseName={course.subject} />
               </div>
             </article>,
           ]}
