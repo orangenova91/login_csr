@@ -151,11 +151,85 @@ export default function EvaluationQuestionForm({
     try {
       setIsSubmitting(true);
 
-      // TODO: API 연동
-      console.log("Create evaluation questions:", {
-        courseId,
-        questions: values.questions,
+      // 객관식 문항에 대해 로컬 검증: 정답이 선택되지 않았다면 즉시 에러 표시
+      const incompleteQuestions = values.questions
+        .map((question, index) => ({ question, index }))
+        .filter(
+          ({ question }) =>
+            question.questionType === "객관식" &&
+            (question.correctAnswer === undefined || question.correctAnswer < 0)
+        );
+
+      if (incompleteQuestions.length > 0) {
+        const questionNumbers = incompleteQuestions
+          .map(({ index }) => `문항 ${index + 1}`)
+          .join(", ");
+
+        showToast(
+          `${questionNumbers}의 객관식 정답을 선택해주세요.`,
+          "error"
+        );
+        return;
+      }
+
+      const response = await fetch(`/api/courses/${courseId}/evaluation-questions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(values),
       });
+
+      let responseBody: unknown = null;
+      try {
+        responseBody = await response.json();
+      } catch (parseError) {
+        console.warn("평가 문항 생성 응답 파싱 실패:", parseError);
+      }
+
+      if (!response.ok) {
+        let errorMessage = "평가 문항 생성 중 오류가 발생했습니다.";
+
+        if (
+          responseBody &&
+          typeof responseBody === "object" &&
+          "error" in responseBody &&
+          typeof (responseBody as { error?: unknown }).error === "string"
+        ) {
+          errorMessage = (responseBody as { error: string }).error;
+        }
+
+        if (
+          responseBody &&
+          typeof responseBody === "object" &&
+          "details" in responseBody
+        ) {
+          const details = (responseBody as { details?: unknown }).details;
+          if (typeof details === "string" && details.trim().length > 0) {
+            errorMessage = details;
+          } else if (Array.isArray(details)) {
+            const detailMessages = details
+              .map((detail) => {
+                if (
+                  detail &&
+                  typeof detail === "object" &&
+                  "message" in detail &&
+                  typeof (detail as { message?: unknown }).message === "string"
+                ) {
+                  return (detail as { message: string }).message;
+                }
+                return typeof detail === "string" ? detail : null;
+              })
+              .filter((msg): msg is string => !!msg && msg.trim().length > 0);
+
+            if (detailMessages.length > 0) {
+              errorMessage = detailMessages.join("\n");
+            }
+          }
+        }
+
+        throw new Error(errorMessage);
+      }
 
       showToast(`${values.questions.length}개의 평가 문항이 생성되었습니다.`, "success");
       reset({

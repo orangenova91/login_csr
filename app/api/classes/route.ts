@@ -6,6 +6,27 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 const createClassSchema = z.object({
+  academicYear: z
+    .string()
+    .trim()
+    .min(1, "학년도를 입력하세요")
+    .max(9, "학년도가 너무 깁니다 (예: 2025)"),
+  semester: z.string().trim().min(1, "학기를 선택하세요"),
+  subjectGroup: z
+    .string()
+    .trim()
+    .min(1, "교과군을 입력하세요")
+    .max(50, "교과군은 50자 이하여야 합니다"),
+  subjectArea: z
+    .string()
+    .trim()
+    .min(1, "교과영역을 입력하세요")
+    .max(50, "교과영역은 50자 이하여야 합니다"),
+  careerTrack: z
+    .string()
+    .trim()
+    .min(1, "진로구분을 입력하세요")
+    .max(50, "진로구분은 50자 이하여야 합니다"),
   subject: z
     .string()
     .trim()
@@ -17,6 +38,12 @@ const createClassSchema = z.object({
     .trim()
     .min(1, "강의실을 입력하세요")
     .max(50, "강의실은 50자 이하여야 합니다"),
+  description: z
+    .string()
+    .trim()
+    .min(1, "강의소개를 입력하세요")
+    .max(1000, "강의소개는 1000자 이하여야 합니다"),
+  instructor: z.string().trim().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -40,10 +67,16 @@ export async function POST(request: NextRequest) {
 
     const newClass = await prisma.course.create({
       data: {
+        academicYear: data.academicYear,
+        semester: data.semester,
+        subjectGroup: data.subjectGroup,
+        subjectArea: data.subjectArea,
+        careerTrack: data.careerTrack,
         subject: data.subject,
         grade: data.grade,
         instructor: instructorName,
         classroom: data.classroom,
+        description: data.description,
         teacherId: session.user.id,
       },
     });
@@ -53,10 +86,16 @@ export async function POST(request: NextRequest) {
         message: "수업이 생성되었습니다.",
         class: {
           id: newClass.id,
+          academicYear: newClass.academicYear,
+          semester: newClass.semester,
+          subjectGroup: newClass.subjectGroup,
+          subjectArea: newClass.subjectArea,
+          careerTrack: newClass.careerTrack,
           subject: newClass.subject,
           grade: newClass.grade,
           instructor: newClass.instructor,
           classroom: newClass.classroom,
+          description: newClass.description,
           createdAt: newClass.createdAt,
         },
       },

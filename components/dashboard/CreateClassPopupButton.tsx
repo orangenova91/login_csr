@@ -25,8 +25,8 @@ export default function CreateClassPopupButton({
   return (
     <>
       <Button variant="primary" type="button" onClick={handleOpen}>
-        수업 생성
-      </Button>
+      수업 생성
+    </Button>
 
       {isOpen && (
         <div

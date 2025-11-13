@@ -78,16 +78,23 @@ model VerificationToken {
 }
 
 model Course {
-  id          String       @id @default(auto()) @map("_id") @db.ObjectId
-  subject     String
-  grade       String
-  instructor  String
-  classroom   String
-  teacherId   String?       @db.ObjectId
-  teacher     User?         @relation("TeacherCourses", fields: [teacherId], references: [id], onDelete: SetNull)
-  assignments Assignment[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id                   String                @id @default(auto()) @map("_id") @db.ObjectId
+  academicYear         String                @default("")
+  semester             String                @default("")
+  subjectGroup         String                @default("")
+  subjectArea          String                @default("")
+  careerTrack          String                @default("")
+  subject              String
+  grade                String
+  instructor           String
+  classroom            String
+  description          String                @default("")
+  teacherId            String?               @db.ObjectId
+  teacher              User?                 @relation("TeacherCourses", fields: [teacherId], references: [id], onDelete: SetNull)
+  assignments          Assignment[]
+  evaluationQuestions  EvaluationQuestion[]
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
 
   @@map("classes")
 }
@@ -108,5 +115,19 @@ model Assignment {
   updatedAt        DateTime  @updatedAt
 
   @@map("assignments")
+}
+
+model EvaluationQuestion {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  unit           String   // 평가 단원
+  questionNumber String   // 문제 주문번호
+  questions      String   // JSON 배열로 저장된 문항들
+  courseId       String   @db.ObjectId
+  course         Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  teacherId      String   @db.ObjectId
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("evaluation_questions")
 }
 

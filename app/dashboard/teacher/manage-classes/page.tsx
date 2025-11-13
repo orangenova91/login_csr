@@ -25,10 +25,16 @@ export default async function ManageClassesPage() {
 
   type TeacherCourse = {
     id: string;
+    academicYear: string;
+    semester: string;
+    subjectGroup: string;
+    subjectArea: string;
+    careerTrack: string;
     subject: string;
     grade: string;
     instructor: string;
     classroom: string;
+    description: string;
     createdAt: Date;
   };
 
@@ -88,25 +94,43 @@ export default async function ManageClassesPage() {
                       className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm flex flex-col justify-between transition hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
                     >
                       <article className="flex h-full flex-col justify-between">
-                        <header>
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            {course.subject}
-                          </h3>
-                          <span className="mt-2 inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
-                            {formatGrade(course.grade)}
-                          </span>
-                        </header>
-                        <dl className="space-y-1 text-sm text-gray-600 mt-4 mb-4 flex-1">
-                          <div className="flex items-center gap-2">
-                            <dt className="font-medium text-gray-500">강사</dt>
-                            <dd>{course.instructor}</dd>
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-0.5 text-xs text-gray-600 whitespace-nowrap overflow-hidden">
+                            {course.academicYear?.trim() && (
+                              <span className="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-0.5 font-medium text-slate-700 border border-slate-200">
+                                {course.academicYear.trim()}학년도
+                              </span>
+                            )}
+                            {course.semester?.trim() && (
+                              <span className="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-0.5 font-medium text-slate-700 border border-slate-200">
+                                {course.semester.trim()}
+                              </span>
+                            )}
+                            <span className="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-0.5 font-medium text-slate-700 border border-slate-200">
+                              {formatGrade(course.grade)}
+                            </span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <dt className="font-medium text-gray-500">강의실</dt>
-                            <dd>{course.classroom}</dd>
+
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between gap-4">
+                              <h3 className="text-lg font-semibold text-gray-900 flex-1 text-center">
+                                {course.subject}
+                              </h3>
+                              <dl className="space-y-1 text-right text-sm text-gray-600">
+                                <div className="flex items-center justify-end gap-2">
+                                  <dt className="font-medium text-gray-500">강사</dt>
+                                  <dd>{course.instructor}</dd>
+                                </div>
+                                <div className="flex items-center justify-end gap-2">
+                                  <dt className="font-medium text-gray-500">강의실</dt>
+                                  <dd>{course.classroom}</dd>
+                                </div>
+                              </dl>
+                            </div>
                           </div>
-                        </dl>
-                        <footer className="text-xs text-gray-400">
+                        </div>
+
+                        <footer className="mt-4 text-xs text-gray-400">
                           생성일 · {course.createdAt.toLocaleString("ko-KR")}
                         </footer>
                       </article>

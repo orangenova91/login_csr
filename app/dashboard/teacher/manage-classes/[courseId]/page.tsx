@@ -36,10 +36,16 @@ export default async function ManageClassDetailPage({
         where: { id: string; teacherId: string };
       }) => Promise<{
         id: string;
+        academicYear: string;
+        semester: string;
+        subjectGroup: string;
+        subjectArea: string;
+        careerTrack: string;
         subject: string;
-        grade: string | null;
+        grade: string;
         instructor: string;
         classroom: string;
+        description: string;
         createdAt: Date;
         updatedAt: Date;
       } | null>;
@@ -77,6 +83,21 @@ export default async function ManageClassDetailPage({
 
   const createdAt = new Date(course.createdAt).toLocaleString("ko-KR");
   const updatedAt = new Date(course.updatedAt).toLocaleString("ko-KR");
+  const infoChips = [
+    course.academicYear?.trim()
+      ? `${course.academicYear.trim()} 학년도`
+      : null,
+    course.semester?.trim() ? course.semester.trim() : null,
+    course.subjectGroup?.trim()
+      ? `교과군 ${course.subjectGroup.trim()}`
+      : null,
+    course.subjectArea?.trim()
+      ? `교과영역 ${course.subjectArea.trim()}`
+      : null,
+    course.careerTrack?.trim()
+      ? `진로구분 ${course.careerTrack.trim()}`
+      : null,
+  ].filter(Boolean) as string[];
 
   return (
     <div className="space-y-6">
@@ -109,6 +130,18 @@ export default async function ManageClassDetailPage({
             {getGradeLabel(course.grade)}
           </div>
         </div>
+        {infoChips.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            {infoChips.map((chip) => (
+              <span
+                key={chip}
+                className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700"
+              >
+                {chip}
+              </span>
+            ))}
+          </div>
+        )}
         <dl className="grid gap-4 sm:grid-cols-2 text-sm text-gray-600">
           <div>
             <dt className="font-medium text-gray-500">생성일</dt>
@@ -119,17 +152,52 @@ export default async function ManageClassDetailPage({
             <dd>{updatedAt}</dd>
           </div>
         </dl>
+        <div className="border-t border-gray-100 pt-4">
+          <h2 className="text-sm font-semibold text-gray-900">강의소개</h2>
+          <p className="mt-2 text-sm text-gray-700 whitespace-pre-line">
+            {course.description}
+          </p>
+        </div>
       </header>
 
       <section>
         <CourseTabs
           tabs={[
+            { id: "overview", label: "수업 개요" },
+            { id: "announcements", label: "공지사항" },
             { id: "attendance", label: "학생 출결 관리" },
             { id: "assignments", label: "수업 과제 관리" },
             { id: "notes", label: "학생 평가" },
+            { id: "record", label: "생기부" },
           ]}
         >
           {[
+            <article
+              key="overview"
+              className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-4"
+            >
+              <header className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900">수업 개요</h2>
+              </header>
+              <div className="space-y-4">
+                <div className="text-sm text-gray-600">
+                  <p>수업 개요 내용이 여기에 표시됩니다.</p>
+                </div>
+              </div>
+            </article>,
+            <article
+              key="announcements"
+              className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-4"
+            >
+              <header className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900">공지사항</h2>
+              </header>
+              <div className="space-y-4">
+                <div className="text-sm text-gray-600">
+                  <p>공지사항 내용이 여기에 표시됩니다.</p>
+                </div>
+              </div>
+            </article>,
             <article
               key="attendance"
               className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-4"
@@ -158,6 +226,19 @@ export default async function ManageClassDetailPage({
                 <h2 className="text-lg font-semibold text-gray-900">학생 평가</h2>
               </header>
               <StudentEvaluation courseId={course.id} />
+            </article>,
+            <article
+              key="record"
+              className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-4"
+            >
+              <header className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900">생기부</h2>
+              </header>
+              <div className="space-y-4">
+                <div className="text-sm text-gray-600">
+                  <p>생기부 내용이 여기에 표시됩니다.</p>
+                </div>
+              </div>
             </article>,
           ]}
         </CourseTabs>
