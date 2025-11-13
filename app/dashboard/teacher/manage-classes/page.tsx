@@ -35,6 +35,7 @@ export default async function ManageClassesPage() {
     instructor: string;
     classroom: string;
     description: string;
+    joinCode: string | null;
     createdAt: Date;
   };
 
@@ -95,20 +96,34 @@ export default async function ManageClassesPage() {
                     >
                       <article className="flex h-full flex-col justify-between">
                         <div className="space-y-4">
-                          <div className="flex items-center gap-0.5 text-xs text-gray-600 whitespace-nowrap overflow-hidden">
-                            {course.academicYear?.trim() && (
-                              <span className="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-0.5 font-medium text-slate-700 border border-slate-200">
-                                {course.academicYear.trim()}학년도
-                              </span>
+                          <div className="space-y-1">
+                            {(course.academicYear?.trim() || course.semester?.trim()) && (
+                              <div className="flex items-center gap-2 text-[11px] text-gray-500">
+                                {course.academicYear?.trim() && (
+                                  <span>{course.academicYear.trim()}학년도</span>
+                                )}
+                                {course.semester?.trim() && <span>{course.semester.trim()}</span>}
+                              </div>
                             )}
-                            {course.semester?.trim() && (
-                              <span className="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-0.5 font-medium text-slate-700 border border-slate-200">
-                                {course.semester.trim()}
+                            <div className="flex items-center justify-between text-xs text-gray-600">
+                              <div className="flex items-center gap-1 overflow-hidden">
+                                {course.joinCode ? (
+                                  <span className="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2.5 py-0.5 font-medium text-indigo-700 border border-indigo-100">
+                                    <span className="uppercase tracking-wide text-[10px] text-indigo-500">
+                                      코드
+                                    </span>
+                                    <span className="font-mono text-sm">
+                                      {course.joinCode}
+                                    </span>
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-400">수업 코드 미발급</span>
+                                )}
+                              </div>
+                              <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 font-medium text-slate-700 border border-slate-200">
+                                {formatGrade(course.grade)}
                               </span>
-                            )}
-                            <span className="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-0.5 font-medium text-slate-700 border border-slate-200">
-                              {formatGrade(course.grade)}
-                            </span>
+                            </div>
                           </div>
 
                           <div className="space-y-3">

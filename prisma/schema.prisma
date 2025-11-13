@@ -89,6 +89,7 @@ model Course {
   instructor           String
   classroom            String
   description          String                @default("")
+  joinCode             String?
   teacherId            String?               @db.ObjectId
   teacher              User?                 @relation("TeacherCourses", fields: [teacherId], references: [id], onDelete: SetNull)
   assignments          Assignment[]

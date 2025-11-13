@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { randomBytes } from "crypto";
 import { z } from "zod";
 
 import { authOptions } from "@/lib/auth";
@@ -46,6 +47,25 @@ const createClassSchema = z.object({
   instructor: z.string().trim().optional(),
 });
 
+async function generateUniqueJoinCode() {
+  const MAX_ATTEMPTS = 5;
+
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
+    const code = randomBytes(3).toString("hex").toUpperCase();
+
+    const existing = await prisma.course.findFirst({
+      where: { joinCode: code },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      return code;
+    }
+  }
+
+  throw new Error("수업 코드를 생성할 수 없습니다. 잠시 후 다시 시도해주세요.");
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -65,6 +85,8 @@ export async function POST(request: NextRequest) {
         ? session.user.name
         : session.user?.email ?? "이름 미기재";
 
+    const joinCode = await generateUniqueJoinCode();
+
     const newClass = await prisma.course.create({
       data: {
         academicYear: data.academicYear,
@@ -77,6 +99,7 @@ export async function POST(request: NextRequest) {
         instructor: instructorName,
         classroom: data.classroom,
         description: data.description,
+        joinCode,
         teacherId: session.user.id,
       },
     });
@@ -96,6 +119,7 @@ export async function POST(request: NextRequest) {
           instructor: newClass.instructor,
           classroom: newClass.classroom,
           description: newClass.description,
+          joinCode: newClass.joinCode,
           createdAt: newClass.createdAt,
         },
       },

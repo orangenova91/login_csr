@@ -83,6 +83,7 @@ type CreateClassFormProps = {
     instructor: string;
     classroom: string;
     description: string;
+    joinCode: string | null;
     createdAt: string;
   }) => void;
 };
