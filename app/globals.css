@@ -32,3 +32,51 @@ body {
   outline-offset: 2px;
 }
 
+/* Range Input 스타일 */
+.range-input {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.range-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.range-input::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  background: transparent;
+}
+
+.range-input-blue::-webkit-slider-thumb {
+  background: #2563eb;
+}
+
+.range-input-blue::-moz-range-thumb {
+  background: #2563eb;
+}
+
+.range-input-green::-webkit-slider-thumb {
+  background: #16a34a;
+}
+
+.range-input-green::-moz-range-thumb {
+  background: #16a34a;
+}
+
+.range-input::-moz-range-track {
+  background: transparent;
+  border: none;
+}
+
