@@ -94,6 +94,7 @@ model Course {
   teacher              User?                 @relation("TeacherCourses", fields: [teacherId], references: [id], onDelete: SetNull)
   assignments          Assignment[]
   evaluationQuestions  EvaluationQuestion[]
+  classGroups          ClassGroup[]
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
 
@@ -130,5 +131,20 @@ model EvaluationQuestion {
   updatedAt      DateTime @updatedAt
 
   @@map("evaluation_questions")
+}
+
+model ClassGroup {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   // 학반명
+  period      String?  // 차시
+  schedules   String   // JSON 배열로 저장된 스케줄 (요일과 교시)
+  courseId    String   @db.ObjectId
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  studentIds  String[] // 학생 ID 배열
+  teacherId   String   @db.ObjectId
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("class_groups")
 }
 
