@@ -44,6 +44,7 @@ export default function EditClassGroupModal({
   const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const daysOfWeek = [
@@ -227,6 +228,48 @@ export default function EditClassGroupModal({
     [className, period, schedules, courseId, classGroup.id, selectedStudentIds, handleClose, onUpdated]
   );
 
+  const handleDelete = useCallback(async () => {
+    // 삭제 확인
+    if (!confirm(`정말로 "${classGroup.name}" 학반을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) {
+      return;
+    }
+
+    setIsDeleting(true);
+    setValidationError(null);
+
+    try {
+      const response = await fetch(
+        `/api/courses/${courseId}/class-groups/${classGroup.id}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        setValidationError(
+          errorData.error || "학반 삭제 중 오류가 발생했습니다."
+        );
+        return;
+      }
+
+      // 이벤트 발생으로 다른 컴포넌트에 알림
+      window.dispatchEvent(
+        new CustomEvent("course:classGroups:updated", {
+          detail: { courseId },
+        })
+      );
+
+      handleClose();
+      onUpdated?.();
+    } catch (error) {
+      console.error("학반 삭제 실패:", error);
+      setValidationError("학반 삭제 중 오류가 발생했습니다.");
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [courseId, classGroup.id, classGroup.name, handleClose, onUpdated]);
+
   if (!isOpen) return null;
 
   return (
@@ -400,24 +443,35 @@ export default function EditClassGroupModal({
             )}
           </div>
 
-          <div className="flex items-center justify-end gap-2 pt-4 border-t border-gray-200">
+          <div className="flex items-center justify-between gap-2 pt-4 border-t border-gray-200">
             <Button
               type="button"
               variant="outline"
-              onClick={handleClose}
-              disabled={isSubmitting}
+              onClick={handleDelete}
+              disabled={isSubmitting || isDeleting}
+              isLoading={isDeleting}
+              className="border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 focus:ring-red-500"
             >
-              취소
+              삭제
             </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={isSubmitting || !className.trim()}
-              isLoading={isSubmitting}
-            >
-              수정
-            </Button>
-            
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleClose}
+                disabled={isSubmitting || isDeleting}
+              >
+                취소
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                disabled={isSubmitting || isDeleting || !className.trim()}
+                isLoading={isSubmitting}
+              >
+                수정
+              </Button>
+            </div>
           </div>
         </form>
       </div>

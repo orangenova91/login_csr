@@ -5,6 +5,20 @@ import { authOptions } from "@/lib/auth";
 import { getTranslations } from "@/lib/i18n";
 import SignOutButton from "@/components/dashboard/SignOutButton";
 import { Sidebar } from "@/components/dashboard/Sidebar";
+import { Footer } from "@/components/dashboard/Footer";
+import { 
+  Home, 
+  Calendar, 
+  BookOpen, 
+  FileText, 
+  Folder, 
+  BarChart, 
+  Users, 
+  Settings,
+  TrendingUp,
+  Bell,
+  HelpCircle
+} from "lucide-react";
 
 export default async function DashboardLayout({
   children,
@@ -25,53 +39,63 @@ export default async function DashboardLayout({
       ? [
           { 
             href: "/dashboard/teacher", 
-            label: t.sidebar.teacher.overview 
+            label: t.sidebar.teacher.overview,
+            icon: <Home className="w-5 h-5" />
           },
           {
             href: "/dashboard/teacher/manage-classes",
             label: t.sidebar.teacher.manageClasses,
+            icon: <BookOpen className="w-5 h-5" />
           },
           {
             href: "/dashboard/teacher/student-progress",
             label: t.sidebar.teacher.studentProgress,
+            icon: <TrendingUp className="w-5 h-5" />
           },
           {
             href: "/dashboard/teacher/announcements",
             label: t.sidebar.teacher.announcements,
+            icon: <Bell className="w-5 h-5" />
           },
           {
             href: "/dashboard/teacher/schedule",
             label: t.sidebar.teacher.schedule,
+            icon: <Calendar className="w-5 h-5" />
           },
         ]
       : role === "student"
       ? [
           { 
             href: "/dashboard/student", 
-            label: t.sidebar.student.overview 
+            label: t.sidebar.student.overview,
+            icon: <Home className="w-5 h-5" />
           },
           {
             href: "/dashboard/student/schedule",
             label: t.sidebar.student.todaysSchedule,
+            icon: <Calendar className="w-5 h-5" />
           },
           {
             href: "/dashboard/student/assignments",
             label: t.sidebar.student.assignments,
+            icon: <FileText className="w-5 h-5" />
           },
           {
             href: "/dashboard/student/announcements",
             label: t.sidebar.student.announcements,
+            icon: <Bell className="w-5 h-5" />
           },
           {
             href: "/dashboard/student/support",
             label: t.sidebar.student.support,
+            icon: <HelpCircle className="w-5 h-5" />
           },
         ]
       : [];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <nav className="bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
@@ -87,12 +111,13 @@ export default async function DashboardLayout({
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row md:items-start gap-6">
-          <Sidebar items={navItems} />
-          <section className="flex-1 w-full">{children}</section>
+      <Sidebar items={navItems} />
+      <main className="pl-[244px] xl:pl-[284px] pt-20 pb-10 sm:px-8 lg:px-10 flex-1">
+        <div className="max-w-7xl mx-auto">
+          <section className="w-full">{children}</section>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

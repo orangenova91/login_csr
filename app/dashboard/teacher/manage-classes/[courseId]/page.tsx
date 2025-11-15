@@ -9,8 +9,8 @@ import AssignmentManager from "@/components/dashboard/AssignmentManager";
 import StudentEvaluation from "@/components/dashboard/StudentEvaluation";
 import CourseSettings from "@/components/dashboard/CourseSettings";
 import CourseOverview from "@/components/dashboard/CourseOverview";
-import CreateClassGroupButton from "@/components/dashboard/CreateClassGroupButton";
 import ClassGroupList from "@/components/dashboard/ClassGroupList";
+import AttendanceHeader from "@/components/dashboard/AttendanceHeader";
 
 interface ManageClassDetailPageProps {
   params: {
@@ -80,15 +80,6 @@ export default async function ManageClassDetailPage({
       : null,
   ].filter(Boolean) as string[];
 
-  // 오늘 날짜와 요일 가져오기
-  const today = new Date();
-  const weekdays = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
-  const todayDate = today.toLocaleDateString("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-  const todayWeekday = weekdays[today.getDay()];
 
   return (
     <div className="space-y-6">
@@ -186,15 +177,7 @@ export default async function ManageClassDetailPage({
               key="attendance"
               className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-4"
             >
-              <header className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <h2 className="text-lg font-semibold text-gray-900">학생 출결</h2>
-                  <span className="text-sm text-gray-500">
-                    {todayDate} ({todayWeekday})
-                  </span>
-                </div>
-                <CreateClassGroupButton courseId={course.id} students={students} />
-              </header>
+              <AttendanceHeader courseId={course.id} students={students} />
               <div className="space-y-4">
                 <ClassGroupList courseId={course.id} students={students} />
               </div>

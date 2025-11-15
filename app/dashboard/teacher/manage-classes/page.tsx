@@ -70,13 +70,13 @@ export default async function ManageClassesPage() {
 
   return (
     <div>
-      <div className="flex justify-end mb-4">
-        <CreateClassPopupButton instructorName={instructorName} />
-      </div>
       <div className="border-4 border-dashed border-gray-200 rounded-lg p-8 bg-white space-y-6">
-        <header>
-          <h1 className="text-2xl font-bold text-gray-900">{copy.title}</h1>
-          <p className="mt-2 text-sm text-gray-600">{copy.description}</p>
+        <header className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">{copy.title}</h1>
+            <p className="mt-2 text-sm text-gray-600">{copy.description}</p>
+          </div>
+          <CreateClassPopupButton instructorName={instructorName} />
         </header>
       </div>
       <section className="space-y-4">

@@ -101,3 +101,63 @@ export async function PUT(
   }
 }
 
+// 학반 삭제
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { courseId: string; classGroupId: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || session.user?.role !== "teacher") {
+      return NextResponse.json(
+        { error: "학반 삭제 권한이 없습니다." },
+        { status: 403 }
+      );
+    }
+
+    // 학반 존재 여부 및 소유권 확인
+    const existingClassGroup = await prisma.classGroup.findFirst({
+      where: {
+        id: params.classGroupId,
+        courseId: params.courseId,
+        teacherId: session.user.id,
+      },
+    });
+
+    if (!existingClassGroup) {
+      return NextResponse.json(
+        { error: "학반을 찾을 수 없거나 삭제 권한이 없습니다." },
+        { status: 404 }
+      );
+    }
+
+    console.log("학반 삭제 요청:", {
+      classGroupId: params.classGroupId,
+      courseId: params.courseId,
+      teacherId: session.user.id,
+    });
+
+    // 학반 삭제
+    await prisma.classGroup.delete({
+      where: { id: params.classGroupId },
+    });
+
+    console.log("학반 삭제 성공:", params.classGroupId);
+
+    return NextResponse.json(
+      {
+        message: "학반이 성공적으로 삭제되었습니다.",
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("학반 삭제 오류:", error);
+
+    return NextResponse.json(
+      { error: "학반 삭제 중 오류가 발생했습니다." },
+      { status: 500 }
+    );
+  }
+}
+

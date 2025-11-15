@@ -123,7 +123,7 @@ export default function ClassGroupList({
   }
 
   return (
-    <div className="w-full  max-w-2xl overflow-hidden">
+    <div className="w-full max-w-4xl overflow-hidden"> {/**<--여기서 학생 출결 tab의 크기 조절 */}
     <div className="flex flex-col md:flex-row md:flex-nowrap gap-4 overflow-x-auto pb-4 md:pb-2">
       {classGroups.map((group) => {
         const studentIds = Array.isArray(group.studentIds)
