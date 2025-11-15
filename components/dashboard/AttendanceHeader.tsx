@@ -13,11 +13,13 @@ type Student = {
 type AttendanceHeaderProps = {
   courseId: string;
   students: Student[];
+  onDateChange?: (date: Date) => void;
 };
 
 export default function AttendanceHeader({
   courseId,
   students,
+  onDateChange,
 }: AttendanceHeaderProps) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
@@ -47,19 +49,23 @@ export default function AttendanceHeader({
   };
 
   const handleTodayClick = () => {
-    setSelectedDate(new Date());
+    const today = new Date();
+    setSelectedDate(today);
+    onDateChange?.(today);
   };
 
   const handlePreviousDay = () => {
     const newDate = new Date(selectedDate);
     newDate.setDate(newDate.getDate() - 1);
     setSelectedDate(newDate);
+    onDateChange?.(newDate);
   };
 
   const handleNextDay = () => {
     const newDate = new Date(selectedDate);
     newDate.setDate(newDate.getDate() + 1);
     setSelectedDate(newDate);
+    onDateChange?.(newDate);
   };
 
   // 달력 외부 클릭 시 닫기
@@ -106,6 +112,7 @@ export default function AttendanceHeader({
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
     setIsCalendarOpen(false);
+    onDateChange?.(date);
   };
 
   const handlePreviousMonth = () => {

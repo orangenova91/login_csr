@@ -9,8 +9,7 @@ import AssignmentManager from "@/components/dashboard/AssignmentManager";
 import StudentEvaluation from "@/components/dashboard/StudentEvaluation";
 import CourseSettings from "@/components/dashboard/CourseSettings";
 import CourseOverview from "@/components/dashboard/CourseOverview";
-import ClassGroupList from "@/components/dashboard/ClassGroupList";
-import AttendanceHeader from "@/components/dashboard/AttendanceHeader";
+import AttendanceSection from "@/components/dashboard/AttendanceSection";
 
 interface ManageClassDetailPageProps {
   params: {
@@ -177,10 +176,7 @@ export default async function ManageClassDetailPage({
               key="attendance"
               className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-4"
             >
-              <AttendanceHeader courseId={course.id} students={students} />
-              <div className="space-y-4">
-                <ClassGroupList courseId={course.id} students={students} />
-              </div>
+              <AttendanceSection courseId={course.id} students={students} />
             </article>,
             <article
               key="assignments"

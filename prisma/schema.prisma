@@ -134,17 +134,33 @@ model EvaluationQuestion {
 }
 
 model ClassGroup {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String   // 학반명
-  period      String?  // 차시
-  schedules   String   // JSON 배열로 저장된 스케줄 (요일과 교시)
-  courseId    String   @db.ObjectId
-  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  studentIds  String[] // 학생 ID 배열
-  teacherId   String   @db.ObjectId
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  name        String      // 학반명
+  period      String?     // 차시
+  schedules   String      // JSON 배열로 저장된 스케줄 (요일과 교시)
+  courseId    String      @db.ObjectId
+  course      Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  studentIds  String[]    // 학생 ID 배열
+  teacherId   String      @db.ObjectId
+  attendances Attendance[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
   @@map("class_groups")
+}
+
+model Attendance {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  classGroupId String     @db.ObjectId
+  classGroup   ClassGroup @relation(fields: [classGroupId], references: [id], onDelete: Cascade)
+  studentId    String     @db.ObjectId
+  date         DateTime   // 출결 날짜
+  status       String     // 출결 상태: "present", "late", "sick_leave", "approved_absence", "excused"
+  teacherId    String     @db.ObjectId
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([classGroupId, studentId, date])
+  @@map("attendances")
 }
 

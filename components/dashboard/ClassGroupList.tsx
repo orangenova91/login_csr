@@ -24,11 +24,13 @@ type Student = {
 type ClassGroupListProps = {
   courseId: string;
   students: Student[];
+  selectedDate?: Date;
 };
 
 export default function ClassGroupList({
   courseId,
   students,
+  selectedDate,
 }: ClassGroupListProps) {
   const [classGroups, setClassGroups] = useState<ClassGroup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -37,6 +39,9 @@ export default function ClassGroupList({
   const [editingGroup, setEditingGroup] = useState<ClassGroup | null>(null);
   // 출결 상태 관리: { groupId-studentId: 'present' | 'late' | 'sick_leave' | 'approved_absence' | 'excused' }
   const [attendanceState, setAttendanceState] = useState<Record<string, string>>({});
+  const [savingGroupId, setSavingGroupId] = useState<string | null>(null);
+  // 저장된 학반 추적: { groupId-dateKey: true }
+  const [savedGroups, setSavedGroups] = useState<Record<string, boolean>>({});
 
   // API에서 학반 데이터 로드
   useEffect(() => {
@@ -65,6 +70,67 @@ export default function ClassGroupList({
 
     loadClassGroups();
   }, [courseId, updateTick]);
+
+  // 선택된 날짜의 출결 데이터 로드
+  useEffect(() => {
+    if (!selectedDate || classGroups.length === 0) {
+      setAttendanceState({});
+      setSavedGroups({});
+      return;
+    }
+
+    const loadAttendances = async () => {
+      try {
+        const dateKey = selectedDate.toISOString().split('T')[0]; // YYYY-MM-DD 형식
+        const newSavedGroups: Record<string, boolean> = {};
+        
+        const attendancePromises = classGroups.map(async (group) => {
+          try {
+            const response = await fetch(
+              `/api/courses/${courseId}/class-groups/${group.id}/attendance?date=${selectedDate.toISOString()}`
+            );
+
+            if (!response.ok) {
+              return null;
+            }
+
+            const data = await response.json();
+            const attendances = data.attendances || [];
+            
+            // 출결 데이터가 있으면 저장된 것으로 표시
+            if (attendances.length > 0) {
+              const savedKey = `${group.id}-${dateKey}`;
+              newSavedGroups[savedKey] = true;
+            }
+            
+            return { groupId: group.id, attendances };
+          } catch (err) {
+            console.error(`학반 ${group.id} 출결 로드 실패:`, err);
+            return null;
+          }
+        });
+
+        const results = await Promise.all(attendancePromises);
+        const newAttendanceState: Record<string, string> = {};
+
+        results.forEach((result) => {
+          if (result) {
+            result.attendances.forEach((attendance: { studentId: string; status: string }) => {
+              const key = `${result.groupId}-${attendance.studentId}`;
+              newAttendanceState[key] = attendance.status;
+            });
+          }
+        });
+
+        setAttendanceState(newAttendanceState);
+        setSavedGroups(newSavedGroups);
+      } catch (err) {
+        console.error("출결 데이터 로드 실패:", err);
+      }
+    };
+
+    loadAttendances();
+  }, [selectedDate, classGroups, courseId]);
 
   // 학반 생성 이벤트 리스닝
   useEffect(() => {
@@ -95,6 +161,82 @@ export default function ClassGroupList({
     return students.find((s) => s.id === studentId);
   };
 
+  // 선택된 날짜의 요일을 한글 약자로 변환 (일: 0, 월: 1, ..., 토: 6)
+  const getDayOfWeek = (date: Date): string => {
+    const days = ["일", "월", "화", "수", "목", "금", "토"];
+    return days[date.getDay()];
+  };
+
+  // 학반이 선택된 날짜의 요일에 수업이 있는지 확인
+  const hasClassOnSelectedDay = (group: ClassGroup): boolean => {
+    if (!selectedDate) return true; // 날짜가 선택되지 않으면 모든 학반 표시
+    
+    const selectedDay = getDayOfWeek(selectedDate);
+    if (!Array.isArray(group.schedules) || group.schedules.length === 0) {
+      return false; // 스케줄이 없으면 표시하지 않음
+    }
+    
+    return group.schedules.some((schedule) => schedule.day === selectedDay);
+  };
+
+  // 출결 저장 함수
+  const handleSaveAttendance = async (group: ClassGroup, groupStudents: Student[]) => {
+    if (!selectedDate) {
+      alert("날짜를 선택해주세요.");
+      return;
+    }
+
+    setSavingGroupId(group.id);
+
+    try {
+      // 해당 학반의 모든 학생 출결 데이터 수집
+      const attendances = groupStudents.map((student) => {
+        const key = `${group.id}-${student.id}`;
+        const status = attendanceState[key] || "present"; // 기본값: 출석
+        return {
+          studentId: student.id,
+          status: status as "present" | "late" | "sick_leave" | "approved_absence" | "excused",
+        };
+      });
+
+      const response = await fetch(
+        `/api/courses/${courseId}/class-groups/${group.id}/attendance`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            date: selectedDate.toISOString(),
+            attendances,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "출결 저장에 실패했습니다.");
+      }
+
+      const result = await response.json();
+      
+      // 저장 성공 시 저장 상태 업데이트
+      const dateKey = selectedDate.toISOString().split('T')[0]; // YYYY-MM-DD 형식
+      const savedKey = `${group.id}-${dateKey}`;
+      setSavedGroups((prev) => ({
+        ...prev,
+        [savedKey]: true,
+      }));
+      
+      alert(`출결이 성공적으로 저장되었습니다. (${result.count}명)`);
+    } catch (error) {
+      console.error("출결 저장 오류:", error);
+      alert(error instanceof Error ? error.message : "출결 저장 중 오류가 발생했습니다.");
+    } finally {
+      setSavingGroupId(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-6 text-center">
@@ -122,10 +264,13 @@ export default function ClassGroupList({
     );
   }
 
+  // 선택된 날짜의 요일에 수업이 있는 학반만 필터링
+  const filteredClassGroups = classGroups.filter(hasClassOnSelectedDay);
+
   return (
-    <div className="w-full max-w-4xl overflow-hidden"> {/**<--여기서 학생 출결 tab의 크기 조절 */}
+    <div className="w-full overflow-hidden">
     <div className="flex flex-col md:flex-row md:flex-nowrap gap-4 overflow-x-auto pb-4 md:pb-2">
-      {classGroups.map((group) => {
+      {filteredClassGroups.map((group) => {
         const studentIds = Array.isArray(group.studentIds)
           ? group.studentIds
           : [];
@@ -136,7 +281,7 @@ export default function ClassGroupList({
         return (
           <div
             key={group.id}
-            className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm w-full md:w-[300px] md:flex-shrink-0"
+            className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm w-full md:w-[350px] md:flex-shrink-0"
           >
             <div className="flex items-start justify-between mb-3">
               <div className="flex-1">
@@ -184,18 +329,53 @@ export default function ClassGroupList({
                   <p className="text-xs font-medium text-gray-700">
                     수강생 ({groupStudents.length}명)
                   </p>
-                  <Button
-                    type="button"
-                    variant="primary"
-                    size="sm"
-                    onClick={() => {
-                      // 출결 저장 로직 추가 예정
-                      console.log("출결 저장:", group.id);
-                    }}
-                    className="text-xs"
-                  >
-                    출결 저장
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    {selectedDate && (() => {
+                      const dateKey = selectedDate.toISOString().split('T')[0];
+                      const savedKey = `${group.id}-${dateKey}`;
+                      const isSaved = savedGroups[savedKey];
+                      
+                      return (
+                        <div 
+                          className="h-4 w-4 rounded-full border-2 flex items-center justify-center pointer-events-none"
+                          style={{
+                            borderColor: isSaved ? '#16a34a' : '#9ca3af',
+                            backgroundColor: isSaved ? '#16a34a' : 'transparent'
+                          }}
+                        >
+                          {isSaved && (
+                            <div 
+                              className="h-1.5 w-1.5 rounded-full bg-white"
+                            />
+                          )}
+                        </div>
+                      );
+                    })()}
+                    {!selectedDate && (
+                      <input
+                        type="radio"
+                        name="selected-group"
+                        value={group.id}
+                        className="h-4 w-4 cursor-pointer"
+                        style={{ 
+                          accentColor: '#2563eb',
+                          width: '16px',
+                          height: '16px',
+                          cursor: 'pointer'
+                        }}
+                      />
+                    )}
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      onClick={() => handleSaveAttendance(group, groupStudents)}
+                      disabled={savingGroupId === group.id || !selectedDate}
+                      className="text-xs"
+                    >
+                      {savingGroupId === group.id ? "저장 중..." : "출결 저장"}
+                    </Button>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   {groupStudents.map((student) => (
