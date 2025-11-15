@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import EditClassGroupModal from "./EditClassGroupModal";
 import { Button } from "@/components/ui/Button";
+import { Select } from "@/components/ui/Select";
 
 type ClassGroup = {
   id: string;
@@ -34,6 +35,8 @@ export default function ClassGroupList({
   const [error, setError] = useState<string | null>(null);
   const [updateTick, setUpdateTick] = useState(0);
   const [editingGroup, setEditingGroup] = useState<ClassGroup | null>(null);
+  // 출결 상태 관리: { groupId-studentId: 'present' | 'late' | 'sick_leave' | 'approved_absence' | 'excused' }
+  const [attendanceState, setAttendanceState] = useState<Record<string, string>>({});
 
   // API에서 학반 데이터 로드
   useEffect(() => {
@@ -120,7 +123,8 @@ export default function ClassGroupList({
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+    <div className="w-full  max-w-2xl overflow-hidden">
+    <div className="flex flex-col md:flex-row md:flex-nowrap gap-4 overflow-x-auto pb-4 md:pb-2">
       {classGroups.map((group) => {
         const studentIds = Array.isArray(group.studentIds)
           ? group.studentIds
@@ -132,7 +136,7 @@ export default function ClassGroupList({
         return (
           <div
             key={group.id}
-            className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm min-w-[400px] max-w-[600px]"
+            className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm w-full md:w-[300px] md:flex-shrink-0"
           >
             <div className="flex items-start justify-between mb-3">
               <div className="flex-1">
@@ -208,47 +212,59 @@ export default function ClassGroupList({
                             type="radio"
                             name={`attendance-${group.id}-${student.id}`}
                             value="present"
-                            defaultChecked
+                            checked={
+                              attendanceState[`${group.id}-${student.id}`] ===
+                                "present" ||
+                              !attendanceState[`${group.id}-${student.id}`]
+                            }
+                            onChange={(e) => {
+                              const key = `${group.id}-${student.id}`;
+                              if (e.target.checked) {
+                                setAttendanceState((prev) => ({
+                                  ...prev,
+                                  [key]: "present",
+                                }));
+                              }
+                            }}
                             className="h-4 w-4 text-green-600 focus:ring-green-500"
                           />
                           <span>출석</span>
                         </label>
-                        <label className="flex items-center gap-1 text-xs text-gray-600 cursor-pointer">
-                          <input
-                            type="radio"
-                            name={`attendance-${group.id}-${student.id}`}
-                            value="late"
-                            className="h-4 w-4 text-yellow-600 focus:ring-yellow-500"
+                        <div className="w-24">
+                          <Select
+                            options={[
+                              { value: "", label: "선택" },
+                              { value: "late", label: "지각" },
+                              { value: "sick_leave", label: "병결" },
+                              { value: "approved_absence", label: "인정결" },
+                              { value: "excused", label: "공결" },
+                            ]}
+                            value={
+                              attendanceState[`${group.id}-${student.id}`] ===
+                              "present"
+                                ? ""
+                                : attendanceState[`${group.id}-${student.id}`] ||
+                                  ""
+                            }
+                            onChange={(e) => {
+                              const key = `${group.id}-${student.id}`;
+                              const value = e.target.value;
+                              if (value) {
+                                setAttendanceState((prev) => ({
+                                  ...prev,
+                                  [key]: value,
+                                }));
+                              } else {
+                                // 드롭다운을 "선택"으로 되돌리면 출석으로 설정
+                                setAttendanceState((prev) => ({
+                                  ...prev,
+                                  [key]: "present",
+                                }));
+                              }
+                            }}
+                            className="h-8 text-xs"
                           />
-                          <span>지각</span>
-                        </label>
-                        <label className="flex items-center gap-1 text-xs text-gray-600 cursor-pointer">
-                          <input
-                            type="radio"
-                            name={`attendance-${group.id}-${student.id}`}
-                            value="sick_leave"
-                            className="h-4 w-4 text-purple-600 focus:ring-purple-500"
-                          />
-                          <span>병결</span>
-                        </label>
-                        <label className="flex items-center gap-1 text-xs text-gray-600 cursor-pointer">
-                          <input
-                            type="radio"
-                            name={`attendance-${group.id}-${student.id}`}
-                            value="approved_absence"
-                            className="h-4 w-4 text-teal-600 focus:ring-teal-500"
-                          />
-                          <span>인정결</span>
-                        </label>
-                        <label className="flex items-center gap-1 text-xs text-gray-600 cursor-pointer">
-                          <input
-                            type="radio"
-                            name={`attendance-${group.id}-${student.id}`}
-                            value="excused"
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500"
-                          />
-                          <span>공결</span>
-                        </label>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -272,6 +288,7 @@ export default function ClassGroupList({
           }}
         />
       )}
+    </div>
     </div>
   );
 }

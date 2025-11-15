@@ -417,6 +417,7 @@ export default function EditClassGroupModal({
             >
               수정
             </Button>
+            
           </div>
         </form>
       </div>
