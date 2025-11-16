@@ -147,7 +147,7 @@ export default async function ManageClassDetailPage({
             { id: "announcements", label: "공지사항" },
             { id: "attendance", label: "학생 출결" },
             { id: "assignments", label: "수업 자료" },
-            { id: "notes", label: "학생 평가" },
+            { id: "evaluation", label: "학생 평가" },
             { id: "record", label: "생기부" },
             { id: "settings", label: "설정" },
           ]}
@@ -199,7 +199,7 @@ export default async function ManageClassDetailPage({
               <AssignmentManager courseId={course.id} />
             </article>,
             <article
-              key="notes"
+              key="evaluation"
               className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-4"
             >
               <header className="flex items-center justify-between">
