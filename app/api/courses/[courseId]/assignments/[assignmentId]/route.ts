@@ -65,8 +65,13 @@ export async function PUT(
     const title = formData.get("title") as string;
     const description = (formData.get("description") as string) || null;
     const dueDateStr = formData.get("dueDate") as string | null;
-    const file = formData.get("file") as File | null;
-    const removeFile = formData.get("removeFile") === "true";
+    // 멀티 파일 지원: files[], file(백워드 호환)
+    const filesFromArrayRaw = formData.getAll("files");
+    const filesFromArray = filesFromArrayRaw.filter((v): v is File => typeof v !== "string" && v instanceof File);
+    const singleRaw = formData.get("file");
+    const singleFile = typeof singleRaw !== "string" && singleRaw instanceof File ? singleRaw : null;
+    const files: File[] = filesFromArray.length > 0 ? filesFromArray : (singleFile ? [singleFile] : []);
+    const removeFiles = formData.get("removeFile") === "true";
 
     // 데이터 검증
     const validatedData = updateAssignmentSchema.parse({
@@ -75,44 +80,16 @@ export async function PUT(
       dueDate: dueDateStr || undefined,
     });
 
-    let filePath: string | null = existingAssignment.filePath;
-    let originalFileName: string | null = null;
-    let fileSize: number | null = null;
-    let mimeType: string | null = null;
+    // 기존 단일 파일 필드는 더 이상 사용하지 않지만, 하위 호환을 위해 그대로 둡니다.
 
     // 기존 파일 삭제 처리
-    if (removeFile && existingAssignment.filePath) {
-      const oldFilePath = join(process.cwd(), "public", existingAssignment.filePath);
-      if (existsSync(oldFilePath)) {
-        try {
-          await unlink(oldFilePath);
-        } catch (err) {
-          console.error("Failed to delete old file:", err);
-        }
-      }
-      filePath = null;
-    }
-
-    // 새 파일 업로드 처리
-    if (file && file.size > 0) {
-      const ext = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
-      if (!ALLOWED_EXTENSIONS.includes(ext)) {
-        return NextResponse.json(
-          { error: `허용되지 않는 파일 형식입니다. 허용 형식: ${ALLOWED_EXTENSIONS.join(", ")}` },
-          { status: 400 }
-        );
-      }
-
-      if (file.size > MAX_FILE_SIZE) {
-        return NextResponse.json(
-          { error: `파일 크기는 ${MAX_FILE_SIZE / 1024 / 1024}MB 이하여야 합니다.` },
-          { status: 400 }
-        );
-      }
-
-      // 기존 파일이 있으면 삭제
-      if (existingAssignment.filePath) {
-        const oldFilePath = join(process.cwd(), "public", existingAssignment.filePath);
+    // 기존 첨부 삭제 옵션: 모든 첨부 삭제
+    if (removeFiles) {
+      const existingAttachments = await (prisma as any).assignmentAttachment.findMany({
+        where: { assignmentId: params.assignmentId },
+      });
+      for (const att of existingAttachments) {
+        const oldFilePath = join(process.cwd(), "public", att.filePath);
         if (existsSync(oldFilePath)) {
           try {
             await unlink(oldFilePath);
@@ -121,25 +98,59 @@ export async function PUT(
           }
         }
       }
+      await (prisma as any).assignmentAttachment.deleteMany({
+        where: { assignmentId: params.assignmentId },
+      });
+    }
 
-      // 새 파일 저장
+    // 새 파일 업로드 처리
+    // 새 파일 업로드 처리 (여러 개)
+    if (files.length > 0) {
       const uploadsDir = join(process.cwd(), "public", "uploads", "assignments");
       if (!existsSync(uploadsDir)) {
         await mkdir(uploadsDir, { recursive: true });
       }
-
-      const timestamp = Date.now();
-      const sanitizedFileName = `${timestamp}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
-      const filePathOnDisk = join(uploadsDir, sanitizedFileName);
-
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-      await writeFile(filePathOnDisk, buffer);
-
-      filePath = `/uploads/assignments/${sanitizedFileName}`;
-      originalFileName = file.name;
-      fileSize = file.size;
-      mimeType = file.type || "application/octet-stream";
+      const newAttachments: Array<{
+        assignmentId: string;
+        filePath: string;
+        originalFileName: string;
+        fileSize: number | null;
+        mimeType: string | null;
+      }> = [];
+      for (const f of files) {
+        if (!f || f.size === 0) continue;
+        const ext = f.name.substring(f.name.lastIndexOf(".")).toLowerCase();
+        if (!ALLOWED_EXTENSIONS.includes(ext)) {
+          return NextResponse.json(
+            { error: `허용되지 않는 파일 형식입니다. 허용 형식: ${ALLOWED_EXTENSIONS.join(", ")}` },
+            { status: 400 }
+          );
+        }
+        if (f.size > MAX_FILE_SIZE) {
+          return NextResponse.json(
+            { error: `파일 크기는 ${MAX_FILE_SIZE / 1024 / 1024}MB 이하여야 합니다.` },
+            { status: 400 }
+          );
+        }
+        const timestamp = Date.now();
+        const sanitizedFileName = `${timestamp}-${f.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
+        const filePathOnDisk = join(uploadsDir, sanitizedFileName);
+        const bytes = await f.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+        await writeFile(filePathOnDisk, buffer);
+        newAttachments.push({
+          assignmentId: params.assignmentId,
+          filePath: `/uploads/assignments/${sanitizedFileName}`,
+          originalFileName: f.name,
+          fileSize: f.size || null,
+          mimeType: f.type || "application/octet-stream",
+        });
+      }
+      if (newAttachments.length > 0) {
+        await (prisma as any).assignmentAttachment.createMany({
+          data: newAttachments,
+        });
+      }
     }
 
     // 과제 업데이트
@@ -148,13 +159,6 @@ export async function PUT(
       description: validatedData.description || null,
       dueDate: validatedData.dueDate ? new Date(validatedData.dueDate) : null,
     };
-
-    if (filePath !== existingAssignment.filePath) {
-      updateData.filePath = filePath;
-      updateData.originalFileName = originalFileName;
-      updateData.fileSize = fileSize;
-      updateData.mimeType = mimeType;
-    }
 
     const assignment = await (prisma as unknown as {
       assignment: {
@@ -183,8 +187,7 @@ export async function PUT(
           id: assignment.id,
           title: assignment.title,
           description: assignment.description,
-          filePath: assignment.filePath,
-          originalFileName: assignment.originalFileName,
+          // 첨부파일 목록은 상세 조회/목록 API에서 제공합니다.
           createdAt: assignment.createdAt.toISOString(),
           dueDate: assignment.dueDate?.toISOString() || null,
         },

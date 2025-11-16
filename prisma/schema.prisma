@@ -115,8 +115,22 @@ model Assignment {
   teacherId        String    @db.ObjectId
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
+  attachments      AssignmentAttachment[] // 다중 첨부파일
 
   @@map("assignments")
+}
+
+model AssignmentAttachment {
+  id               String     @id @default(auto()) @map("_id") @db.ObjectId
+  assignmentId     String     @db.ObjectId
+  assignment       Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  filePath         String
+  originalFileName String
+  fileSize         Int?
+  mimeType         String?
+  createdAt        DateTime   @default(now())
+
+  @@map("assignment_attachments")
 }
 
 model EvaluationQuestion {

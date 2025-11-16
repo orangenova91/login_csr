@@ -19,7 +19,6 @@ const assignmentSchema = z.object({
     .trim()
     .max(5000, "설명은 5000자 이하여야 합니다")
     .optional(),
-  dueDate: z.string().optional(),
 });
 
 type AssignmentFormValues = z.infer<typeof assignmentSchema>;
@@ -44,8 +43,8 @@ export default function AssignmentForm({
   onSuccess,
 }: AssignmentFormProps) {
   const { showToast } = useToastContext();
-  const [file, setFile] = useState<File | null>(null);
-  const [removeFile, setRemoveFile] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
+  const [removeFiles, setRemoveFiles] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditMode = !!assignmentId;
 
@@ -59,21 +58,19 @@ export default function AssignmentForm({
     defaultValues: {
       title: initialData?.title || "",
       description: initialData?.description || "",
-      dueDate: initialData?.dueDate
-        ? new Date(initialData.dueDate).toISOString().slice(0, 16)
-        : "",
     },
   });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
+    const selectedFiles = e.target.files ? Array.from(e.target.files) : [];
+    if (selectedFiles.length > 0) {
       const maxSize = 50 * 1024 * 1024; // 50MB
-      if (selectedFile.size > maxSize) {
+      const tooLarge = selectedFiles.find((f) => f.size > maxSize);
+      if (tooLarge) {
         showToast("파일 크기는 50MB 이하여야 합니다.", "error");
         return;
       }
-      setFile(selectedFile);
+      setFiles(selectedFiles);
     }
   };
 
@@ -86,13 +83,10 @@ export default function AssignmentForm({
       if (values.description) {
         formData.append("description", values.description);
       }
-      if (values.dueDate) {
-        formData.append("dueDate", values.dueDate);
+      if (files.length > 0) {
+        files.forEach((f) => formData.append("files", f));
       }
-      if (file) {
-        formData.append("file", file);
-      }
-      if (removeFile) {
+      if (removeFiles) {
         formData.append("removeFile", "true");
       }
 
@@ -121,8 +115,8 @@ export default function AssignmentForm({
         "success"
       );
       reset();
-      setFile(null);
-      setRemoveFile(false);
+      setFiles([]);
+      setRemoveFiles(false);
       onSuccess?.();
     } catch (error) {
       console.error(error);
@@ -171,66 +165,56 @@ export default function AssignmentForm({
         )}
       </div>
 
-      <div className="grid gap-6 sm:grid-cols-2">
+      <div className="grid gap-6 sm:grid-cols-1">
         <div>
           <label
-            htmlFor="dueDate"
+            htmlFor="files"
             className="block text-sm font-medium text-gray-700 mb-1"
           >
-            마감일 (선택)
+            첨부 파일 (선택, 여러 개 가능)
           </label>
           <input
-            {...register("dueDate")}
-            id="dueDate"
-            type="datetime-local"
-            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="file"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            첨부 파일 (선택)
-          </label>
-          <input
-            id="file"
+            id="files"
             type="file"
+            multiple
             onChange={handleFileChange}
             accept=".ppt,.pptx,.pdf,.doc,.docx,.xls,.xlsx,.zip,.hwp,.hwpx,.jpg,.jpeg,.png,.gif,.bmp,.webp,.svg"
             className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-3 file:py-1 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
           />
-          {file && (
-            <p className="mt-1 text-sm text-gray-600">
-              선택된 파일: {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
-            </p>
+          {files.length > 0 && (
+            <ul className="mt-1 text-sm text-gray-600 list-disc pl-4 space-y-0.5">
+              {files.map((f) => (
+                <li key={f.name}>
+                  {f.name} ({(f.size / 1024 / 1024).toFixed(2)} MB)
+                </li>
+              ))}
+            </ul>
           )}
-          {isEditMode && initialData?.filePath && !file && (
+          {isEditMode && !files.length && initialData?.originalFileName && (
             <div className="mt-2 flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 p-2">
               <span className="text-sm text-gray-600 flex-1">
                 현재 파일: {initialData.originalFileName}
               </span>
               <button
                 type="button"
-                onClick={() => setRemoveFile(!removeFile)}
+                onClick={() => setRemoveFiles(!removeFiles)}
                 className={`text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 rounded px-2 py-1 ${
-                  removeFile
+                  removeFiles
                     ? "text-blue-600 hover:text-blue-700 focus-visible:ring-blue-500"
                     : "text-red-600 hover:text-red-700 focus-visible:ring-red-500"
                 }`}
               >
-                {removeFile ? "삭제 취소" : "파일 삭제"}
+                {removeFiles ? "삭제 취소" : "파일 삭제"}
               </button>
             </div>
           )}
-          {removeFile && (
+          {removeFiles && (
             <p className="mt-1 text-sm text-red-600">
-              파일이 삭제됩니다. 새 파일을 선택하거나 취소하려면 파일 삭제를 다시 클릭하세요.
+              기존 첨부 파일이 모두 삭제됩니다. 새 파일을 선택하거나 취소하려면 파일 삭제를 다시 클릭하세요.
             </p>
           )}
           <p className="mt-1 text-xs text-gray-500">
-            허용 형식: PPT, PPTX, PDF, DOC, DOCX, XLS, XLSX, ZIP, HWP, HWPX, JPG, PNG, GIF, BMP, WEBP, SVG (최대 50MB)
+            허용 형식: PPT, PPTX, PDF, DOC, DOCX, XLS, XLSX, ZIP, HWP, HWPX, JPG, PNG, GIF, BMP, WEBP, SVG (파일당 최대 50MB)
           </p>
         </div>
       </div>
@@ -241,8 +225,8 @@ export default function AssignmentForm({
           variant="outline"
           onClick={() => {
             reset();
-            setFile(null);
-            setRemoveFile(false);
+            setFiles([]);
+            setRemoveFiles(false);
           }}
         >
           초기화

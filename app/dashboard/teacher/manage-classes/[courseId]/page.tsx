@@ -9,6 +9,8 @@ import AssignmentManager from "@/components/dashboard/AssignmentManager";
 import StudentEvaluation from "@/components/dashboard/StudentEvaluation";
 import CourseSettings from "@/components/dashboard/CourseSettings";
 import CourseOverview from "@/components/dashboard/CourseOverview";
+import CreateClassGroupButton from "@/components/dashboard/CreateClassGroupButton";
+import ClassGroupList from "@/components/dashboard/ClassGroupList";
 import AttendanceSection from "@/components/dashboard/AttendanceSection";
 
 interface ManageClassDetailPageProps {
@@ -79,6 +81,15 @@ export default async function ManageClassDetailPage({
       : null,
   ].filter(Boolean) as string[];
 
+  // 오늘 날짜와 요일 가져오기
+  const today = new Date();
+  const weekdays = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
+  const todayDate = today.toLocaleDateString("ko-KR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  const todayWeekday = weekdays[today.getDay()];
 
   return (
     <div className="space-y-6">
@@ -135,7 +146,7 @@ export default async function ManageClassDetailPage({
             { id: "overview", label: "수업 소개" },
             { id: "announcements", label: "공지사항" },
             { id: "attendance", label: "학생 출결" },
-            { id: "assignments", label: "수업 과제" },
+            { id: "assignments", label: "수업 자료" },
             { id: "notes", label: "학생 평가" },
             { id: "record", label: "생기부" },
             { id: "settings", label: "설정" },
@@ -183,7 +194,7 @@ export default async function ManageClassDetailPage({
               className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-4"
             >
               <header className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">수업 과제</h2>
+                <h2 className="text-lg font-semibold text-gray-900">수업 자료</h2>
               </header>
               <AssignmentManager courseId={course.id} />
             </article>,

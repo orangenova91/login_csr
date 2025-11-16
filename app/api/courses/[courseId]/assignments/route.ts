@@ -61,7 +61,12 @@ export async function POST(
     const title = formData.get("title") as string;
     const description = (formData.get("description") as string) || null;
     const dueDateStr = formData.get("dueDate") as string | null;
-    const file = formData.get("file") as File | null;
+    // 멀티 파일 지원: files[], file(백워드 호환)
+    const filesFromArrayRaw = formData.getAll("files");
+    const filesFromArray = filesFromArrayRaw.filter((v): v is File => typeof v !== "string" && v instanceof File);
+    const singleRaw = formData.get("file");
+    const singleFile = typeof singleRaw !== "string" && singleRaw instanceof File ? singleRaw : null;
+    const files: File[] = filesFromArray.length > 0 ? filesFromArray : (singleFile ? [singleFile] : []);
 
     // 데이터 검증
     const validatedData = createAssignmentSchema.parse({
@@ -70,46 +75,46 @@ export async function POST(
       dueDate: dueDateStr || undefined,
     });
 
-    let filePath: string | null = null;
-    let originalFileName: string | null = null;
-    let fileSize: number | null = null;
-    let mimeType: string | null = null;
-
-    // 파일 처리 (선택적)
-    if (file && file.size > 0) {
-      const ext = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
-      if (!ALLOWED_EXTENSIONS.includes(ext)) {
-        return NextResponse.json(
-          { error: `허용되지 않는 파일 형식입니다. 허용 형식: ${ALLOWED_EXTENSIONS.join(", ")}` },
-          { status: 400 }
-        );
-      }
-
-      if (file.size > MAX_FILE_SIZE) {
-        return NextResponse.json(
-          { error: `파일 크기는 ${MAX_FILE_SIZE / 1024 / 1024}MB 이하여야 합니다.` },
-          { status: 400 }
-        );
-      }
-
-      // 파일 저장
+    // 파일 저장 (선택적, 여러 개)
+    const savedFiles: Array<{
+      filePath: string;
+      originalFileName: string;
+      fileSize: number | null;
+      mimeType: string | null;
+    }> = [];
+    if (files.length > 0) {
       const uploadsDir = join(process.cwd(), "public", "uploads", "assignments");
       if (!existsSync(uploadsDir)) {
         await mkdir(uploadsDir, { recursive: true });
       }
-
-      const timestamp = Date.now();
-      const sanitizedFileName = `${timestamp}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
-      const filePathOnDisk = join(uploadsDir, sanitizedFileName);
-
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-      await writeFile(filePathOnDisk, buffer);
-
-      filePath = `/uploads/assignments/${sanitizedFileName}`;
-      originalFileName = file.name;
-      fileSize = file.size;
-      mimeType = file.type || "application/octet-stream";
+      for (const f of files) {
+        if (!f || f.size === 0) continue;
+        const ext = f.name.substring(f.name.lastIndexOf(".")).toLowerCase();
+        if (!ALLOWED_EXTENSIONS.includes(ext)) {
+          return NextResponse.json(
+            { error: `허용되지 않는 파일 형식입니다. 허용 형식: ${ALLOWED_EXTENSIONS.join(", ")}` },
+            { status: 400 }
+          );
+        }
+        if (f.size > MAX_FILE_SIZE) {
+          return NextResponse.json(
+            { error: `파일 크기는 ${MAX_FILE_SIZE / 1024 / 1024}MB 이하여야 합니다.` },
+            { status: 400 }
+          );
+        }
+        const timestamp = Date.now();
+        const sanitizedFileName = `${timestamp}-${f.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
+        const filePathOnDisk = join(uploadsDir, sanitizedFileName);
+        const bytes = await f.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+        await writeFile(filePathOnDisk, buffer);
+        savedFiles.push({
+          filePath: `/uploads/assignments/${sanitizedFileName}`,
+          originalFileName: f.name,
+          fileSize: f.size || null,
+          mimeType: f.type || "application/octet-stream",
+        });
+      }
     }
 
     // 과제 생성
@@ -119,10 +124,6 @@ export async function POST(
           data: {
             title: string;
             description: string | null;
-            filePath: string | null;
-            originalFileName: string | null;
-            fileSize: number | null;
-            mimeType: string | null;
             dueDate: Date | null;
             courseId: string;
             teacherId: string;
@@ -131,8 +132,6 @@ export async function POST(
           id: string;
           title: string;
           description: string | null;
-          filePath: string | null;
-          originalFileName: string | null;
           createdAt: Date;
           dueDate: Date | null;
         }>;
@@ -141,15 +140,36 @@ export async function POST(
       data: {
         title: validatedData.title,
         description: validatedData.description || null,
-        filePath,
-        originalFileName,
-        fileSize,
-        mimeType,
         dueDate: validatedData.dueDate ? new Date(validatedData.dueDate) : null,
         courseId: params.courseId,
         teacherId: session.user.id,
       },
     });
+
+    // 첨부파일 레코드 생성
+    if (savedFiles.length > 0) {
+      await (prisma as unknown as {
+        assignmentAttachment: {
+          createMany: (args: {
+            data: Array<{
+              assignmentId: string;
+              filePath: string;
+              originalFileName: string;
+              fileSize: number | null;
+              mimeType: string | null;
+            }>;
+          }) => Promise<{ count: number }>;
+        };
+      }).assignmentAttachment.createMany({
+        data: savedFiles.map((sf) => ({
+          assignmentId: assignment.id,
+          filePath: sf.filePath,
+          originalFileName: sf.originalFileName,
+          fileSize: sf.fileSize,
+          mimeType: sf.mimeType,
+        })),
+      });
+    }
 
     return NextResponse.json(
       {
@@ -158,8 +178,7 @@ export async function POST(
           id: assignment.id,
           title: assignment.title,
           description: assignment.description,
-          filePath: assignment.filePath,
-          originalFileName: assignment.originalFileName,
+          attachments: savedFiles,
           createdAt: assignment.createdAt.toISOString(),
           dueDate: assignment.dueDate?.toISOString() || null,
         },
@@ -219,24 +238,28 @@ export async function GET(
         findMany: (args: {
           where: { courseId: string };
           orderBy: { createdAt: "desc" };
+          include?: { attachments: true };
         }) => Promise<
           Array<{
             id: string;
             title: string;
             description: string | null;
-            filePath: string | null;
-            originalFileName: string | null;
-            fileSize: number | null;
-            mimeType: string | null;
             dueDate: Date | null;
             createdAt: Date;
             updatedAt: Date;
+            attachments?: Array<{
+              filePath: string;
+              originalFileName: string;
+              fileSize: number | null;
+              mimeType: string | null;
+            }>;
           }>
         >;
       };
     }).assignment.findMany({
       where: { courseId: params.courseId },
       orderBy: { createdAt: "desc" },
+      include: { attachments: true } as any,
     });
 
     return NextResponse.json({
@@ -244,10 +267,12 @@ export async function GET(
         id: a.id,
         title: a.title,
         description: a.description,
-        filePath: a.filePath,
-        originalFileName: a.originalFileName,
-        fileSize: a.fileSize,
-        mimeType: a.mimeType,
+        attachments: (a as any).attachments?.map((att: any) => ({
+          filePath: att.filePath,
+          originalFileName: att.originalFileName,
+          fileSize: att.fileSize,
+          mimeType: att.mimeType,
+        })) ?? [],
         dueDate: a.dueDate?.toISOString() || null,
         createdAt: a.createdAt.toISOString(),
         updatedAt: a.updatedAt.toISOString(),
