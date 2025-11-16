@@ -32,6 +32,12 @@ interface AssignmentFormProps {
     dueDate: string | null;
     originalFileName: string | null;
     filePath: string | null;
+    attachments?: {
+      filePath: string;
+      originalFileName: string;
+      fileSize: number | null;
+      mimeType: string | null;
+    }[];
   };
   onSuccess?: () => void;
 }
@@ -44,8 +50,33 @@ export default function AssignmentForm({
 }: AssignmentFormProps) {
   const { showToast } = useToastContext();
   const [files, setFiles] = useState<File[]>([]);
+  const [existingAttachments, setExistingAttachments] = useState<
+    {
+      id?: string;
+      filePath: string;
+      originalFileName: string;
+      fileSize: number | null;
+      mimeType: string | null;
+    }[]
+  >(() => {
+    const list =
+      initialData?.attachments && initialData.attachments.length > 0
+        ? initialData.attachments
+        : (initialData?.originalFileName && initialData?.filePath
+            ? [
+                {
+                  filePath: initialData.filePath,
+                  originalFileName: initialData.originalFileName,
+                  fileSize: null,
+                  mimeType: null,
+                },
+              ]
+            : []);
+    return list;
+  });
   const [removeFiles, setRemoveFiles] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const isEditMode = !!assignmentId;
 
   const {
@@ -70,8 +101,12 @@ export default function AssignmentForm({
         showToast("파일 크기는 50MB 이하여야 합니다.", "error");
         return;
       }
-      setFiles(selectedFiles);
+      setFiles((prev) => [...prev, ...selectedFiles]);
     }
+  };
+
+  const handleRemoveSelectedFile = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const onSubmit = async (values: AssignmentFormValues) => {
@@ -105,18 +140,16 @@ export default function AssignmentForm({
         const errorMessage =
           responseBody?.error ??
           (isEditMode
-            ? "과제 수정 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
-            : "과제 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+            ? "자료 수정 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
+            : "자료 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
         throw new Error(errorMessage);
       }
 
-      showToast(
-        isEditMode ? "과제가 수정되었습니다." : "과제가 생성되었습니다.",
-        "success"
-      );
+      showToast(isEditMode ? "자료가 수정되었습니다." : "자료가 생성되었습니다.", "success");
       reset();
       setFiles([]);
       setRemoveFiles(false);
+      setExistingAttachments([]);
       onSuccess?.();
     } catch (error) {
       console.error(error);
@@ -124,11 +157,50 @@ export default function AssignmentForm({
         error instanceof Error
           ? error.message
           : isEditMode
-          ? "과제 수정 중 오류가 발생했습니다."
-          : "과제 생성 중 오류가 발생했습니다.";
+          ? "자료 수정 중 오류가 발생했습니다."
+          : "자료 생성 중 오류가 발생했습니다.";
       showToast(message, "error");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteAttachment = async (att: {
+    id?: string;
+    filePath: string;
+    originalFileName: string;
+  }) => {
+    if (!isEditMode || !assignmentId) return;
+    if (!att.id) {
+      showToast("이 첨부는 개별 삭제를 지원하지 않습니다.", "error");
+      return;
+    }
+    const confirmed = window.confirm(
+      `"${att.originalFileName}" 파일을 삭제하시겠습니까?`
+    );
+    if (!confirmed) return;
+    try {
+      setDeletingId(att.id);
+      const res = await fetch(
+        `/api/courses/${courseId}/assignments/${assignmentId}/attachments/${att.id}`,
+        { method: "DELETE" }
+      );
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(body?.error || "첨부 삭제에 실패했습니다.");
+      }
+      setExistingAttachments((prev) =>
+        prev.filter((a) => a.id !== att.id)
+      );
+      showToast("첨부가 삭제되었습니다.", "success");
+    } catch (e) {
+      console.error(e);
+      showToast(
+        e instanceof Error ? e.message : "첨부 삭제 중 오류가 발생했습니다.",
+        "error"
+      );
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -137,8 +209,8 @@ export default function AssignmentForm({
       <div>
         <Input
           {...register("title")}
-          label="과제 제목"
-          placeholder="예: 1주차 수학 과제"
+          label="자료 제목"
+          placeholder="예: 1주차 수업 자료"
           error={errors.title?.message}
           aria-required="true"
         />
@@ -155,8 +227,8 @@ export default function AssignmentForm({
           {...register("description")}
           id="description"
           rows={4}
-          className="flex w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-          placeholder="과제에 대한 설명을 입력하세요..."
+          className="flex w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 ring-offset-white placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          placeholder="자료에 대한 설명을 입력하세요..."
         />
         {errors.description && (
           <p className="mt-1 text-sm text-red-600" role="alert">
@@ -179,33 +251,60 @@ export default function AssignmentForm({
             multiple
             onChange={handleFileChange}
             accept=".ppt,.pptx,.pdf,.doc,.docx,.xls,.xlsx,.zip,.hwp,.hwpx,.jpg,.jpeg,.png,.gif,.bmp,.webp,.svg"
-            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-3 file:py-1 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-3 file:py-1 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 placeholder:text-gray-500"
           />
           {files.length > 0 && (
-            <ul className="mt-1 text-sm text-gray-600 list-disc pl-4 space-y-0.5">
-              {files.map((f) => (
-                <li key={f.name}>
-                  {f.name} ({(f.size / 1024 / 1024).toFixed(2)} MB)
+            <ul className="mt-2 text-sm text-gray-700 space-y-1">
+              {files.map((f, idx) => (
+                <li
+                  key={`${f.name}-${idx}`}
+                  className="flex items-center justify-between gap-2 rounded border border-gray-200 bg-white px-2 py-1"
+                >
+                  <span className="truncate">
+                    {f.name} ({(f.size / 1024 / 1024).toFixed(2)} MB)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveSelectedFile(idx)}
+                    className="flex-shrink-0 text-xs text-red-600 hover:text-red-700 rounded px-2 py-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
+                  >
+                    삭제
+                  </button>
                 </li>
               ))}
             </ul>
           )}
-          {isEditMode && !files.length && initialData?.originalFileName && (
-            <div className="mt-2 flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 p-2">
-              <span className="text-sm text-gray-600 flex-1">
-                현재 파일: {initialData.originalFileName}
-              </span>
-              <button
-                type="button"
-                onClick={() => setRemoveFiles(!removeFiles)}
-                className={`text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 rounded px-2 py-1 ${
-                  removeFiles
-                    ? "text-blue-600 hover:text-blue-700 focus-visible:ring-blue-500"
-                    : "text-red-600 hover:text-red-700 focus-visible:ring-red-500"
-                }`}
-              >
-                {removeFiles ? "삭제 취소" : "파일 삭제"}
-              </button>
+          {isEditMode && (existingAttachments.length > 0) && (
+            <div className="mt-2 rounded-lg border border-gray-200 bg-gray-50 p-2">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <span className="text-sm font-medium text-gray-700">현재 첨부 파일</span>
+                <button
+                  type="button"
+                  onClick={() => setRemoveFiles(!removeFiles)}
+                  className={`text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 rounded px-2 py-1 ${
+                    removeFiles
+                      ? "text-blue-600 hover:text-blue-700 focus-visible:ring-blue-500"
+                      : "text-red-600 hover:text-red-700 focus-visible:ring-red-500"
+                  }`}
+                >
+                  {removeFiles ? "삭제 취소" : "모든 첨부 삭제"}
+                </button>
+              </div>
+              <ul className="text-sm text-gray-600 pl-1 space-y-1">
+                {existingAttachments.map((att, idx) => (
+                  <li key={`${att.filePath}-${idx}`} className="flex items-center justify-between gap-2 break-all rounded border border-gray-200 bg-white px-2 py-1">
+                    <span className="truncate">{att.originalFileName}</span>
+                    <button
+                      type="button"
+                      disabled={!att.id || deletingId === att.id}
+                      onClick={() => handleDeleteAttachment(att as any)}
+                      className="flex-shrink-0 text-xs text-red-600 hover:text-red-700 disabled:opacity-50 rounded px-2 py-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
+                    >
+                      {deletingId === att.id ? "삭제 중..." : "삭제"}
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
           {removeFiles && (
@@ -232,7 +331,7 @@ export default function AssignmentForm({
           초기화
         </Button>
         <Button type="submit" isLoading={isSubmitting}>
-          {isEditMode ? "과제 수정하기" : "과제 생성하기"}
+          {isEditMode ? "자료 수정하기" : "자료 생성하기"}
         </Button>
       </div>
     </form>

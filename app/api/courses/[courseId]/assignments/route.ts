@@ -31,7 +31,7 @@ export async function POST(
 
     if (!session || session.user?.role !== "teacher") {
       return NextResponse.json(
-        { error: "과제 생성 권한이 없습니다." },
+        { error: "수업 자료 생성 권한이 없습니다." },
         { status: 403 }
       );
     }
@@ -173,7 +173,7 @@ export async function POST(
 
     return NextResponse.json(
       {
-        message: "과제가 생성되었습니다.",
+        message: "수업 자료가 생성되었습니다.",
         assignment: {
           id: assignment.id,
           title: assignment.title,
@@ -195,7 +195,7 @@ export async function POST(
 
     console.error("Create assignment error:", error);
     return NextResponse.json(
-      { error: "과제 생성 중 오류가 발생했습니다." },
+      { error: "수업 자료 생성 중 오류가 발생했습니다." },
       { status: 500 }
     );
   }
@@ -248,6 +248,7 @@ export async function GET(
             createdAt: Date;
             updatedAt: Date;
             attachments?: Array<{
+              id: string;
               filePath: string;
               originalFileName: string;
               fileSize: number | null;
@@ -268,6 +269,7 @@ export async function GET(
         title: a.title,
         description: a.description,
         attachments: (a as any).attachments?.map((att: any) => ({
+          id: att.id,
           filePath: att.filePath,
           originalFileName: att.originalFileName,
           fileSize: att.fileSize,
@@ -281,7 +283,7 @@ export async function GET(
   } catch (error) {
     console.error("Get assignments error:", error);
     return NextResponse.json(
-      { error: "과제 목록을 불러오는 중 오류가 발생했습니다." },
+      { error: "수업 자료 목록을 불러오는 중 오류가 발생했습니다." },
       { status: 500 }
     );
   }

@@ -72,7 +72,7 @@ export const translations = {
       teacherSections: {
         manageClasses: {
           title: "수업 관리",
-          description: "담당 수업 일정과 과제를 관리하세요.",
+          description: "담당 수업 일정과 자료를 관리하세요.",
           action: "수업 관리 열기",
         },
         studentProgress: {
@@ -96,8 +96,8 @@ export const translations = {
           description: "오늘 예정된 수업과 활동을 확인하세요.",
         },
         assignments: {
-          title: "제출해야 할 과제",
-          description: "마감 기한이 임박한 과제를 정리했습니다.",
+          title: "확인해야 할 자료",
+          description: "마감 기한이 임박한 자료를 정리했습니다.",
         },
         announcements: {
           title: "공지 사항",
@@ -106,8 +106,8 @@ export const translations = {
       },
       studentScheduleTitle: "오늘의 수업",
       studentScheduleEmpty: "오늘 예정된 수업이 없습니다. 자유 시간을 계획해보세요.",
-      studentAssignmentsTitle: "마감 임박 과제",
-      studentAssignmentsEmpty: "제출해야 할 과제가 없습니다. 수고하셨어요!",
+      studentAssignmentsTitle: "마감 임박 자료",
+      studentAssignmentsEmpty: "확인해야 할 자료가 없습니다. 수고하셨어요!",
       studentAnnouncementsTitle: "최근 공지",
       missingRoleTitle: "역할 정보가 필요합니다",
       missingRoleDescription:
@@ -124,7 +124,7 @@ export const translations = {
       student: {
         overview: "대시보드 홈",
         todaysSchedule: "오늘의 일정",
-        assignments: "과제 확인",
+        assignments: "자료 확인",
         announcements: "공지 보기",
         support: "문의하기",
       },

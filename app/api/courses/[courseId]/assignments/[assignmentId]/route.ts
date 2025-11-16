@@ -31,7 +31,7 @@ export async function PUT(
 
     if (!session || session.user?.role !== "teacher") {
       return NextResponse.json(
-        { error: "과제 수정 권한이 없습니다." },
+        { error: "수업 자료 수정 권한이 없습니다." },
         { status: 403 }
       );
     }
@@ -56,7 +56,7 @@ export async function PUT(
 
     if (!existingAssignment) {
       return NextResponse.json(
-        { error: "과제를 찾을 수 없거나 권한이 없습니다." },
+        { error: "수업 자료를 찾을 수 없거나 권한이 없습니다." },
         { status: 404 }
       );
     }
@@ -182,7 +182,7 @@ export async function PUT(
 
     return NextResponse.json(
       {
-        message: "과제가 수정되었습니다.",
+        message: "수업 자료가 수정되었습니다.",
         assignment: {
           id: assignment.id,
           title: assignment.title,
@@ -203,10 +203,10 @@ export async function PUT(
     }
 
     console.error("Update assignment error:", error);
-    return NextResponse.json(
-      { error: "과제 수정 중 오류가 발생했습니다." },
-      { status: 500 }
-    );
+      return NextResponse.json(
+        { error: "수업 자료 수정 중 오류가 발생했습니다." },
+        { status: 500 }
+      );
   }
 }
 
@@ -219,7 +219,7 @@ export async function DELETE(
 
     if (!session || session.user?.role !== "teacher") {
       return NextResponse.json(
-        { error: "과제 삭제 권한이 없습니다." },
+        { error: "수업 자료 삭제 권한이 없습니다." },
         { status: 403 }
       );
     }
@@ -244,7 +244,7 @@ export async function DELETE(
 
     if (!existingAssignment) {
       return NextResponse.json(
-        { error: "과제를 찾을 수 없거나 권한이 없습니다." },
+        { error: "수업 자료를 찾을 수 없거나 권한이 없습니다." },
         { status: 404 }
       );
     }
@@ -274,13 +274,13 @@ export async function DELETE(
     });
 
     return NextResponse.json(
-      { message: "과제가 삭제되었습니다." },
+      { message: "수업 자료가 삭제되었습니다." },
       { status: 200 }
     );
   } catch (error) {
     console.error("Delete assignment error:", error);
     return NextResponse.json(
-      { error: "과제 삭제 중 오류가 발생했습니다." },
+      { error: "수업 자료 삭제 중 오류가 발생했습니다." },
       { status: 500 }
     );
   }

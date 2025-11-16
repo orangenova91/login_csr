@@ -14,7 +14,6 @@ interface Assignment {
     fileSize: number | null;
     mimeType: string | null;
   }[];
-  dueDate: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -33,6 +32,7 @@ export default function AssignmentList({ courseId, onEdit, onDelete }: Assignmen
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   const fetchAssignments = async () => {
     try {
@@ -42,13 +42,13 @@ export default function AssignmentList({ courseId, onEdit, onDelete }: Assignmen
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "과제 목록을 불러오는데 실패했습니다.");
+        throw new Error(data.error || "자료 목록을 불러오는데 실패했습니다.");
       }
 
       setAssignments(data.assignments || []);
     } catch (err) {
       console.error("Failed to fetch assignments:", err);
-      setError(err instanceof Error ? err.message : "과제 목록을 불러오는데 실패했습니다.");
+      setError(err instanceof Error ? err.message : "자료 목록을 불러오는데 실패했습니다.");
     } finally {
       setIsLoading(false);
     }
@@ -102,17 +102,17 @@ export default function AssignmentList({ courseId, onEdit, onDelete }: Assignmen
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "과제 삭제에 실패했습니다.");
+        throw new Error(data.error || "자료 삭제에 실패했습니다.");
       }
 
-      showToast("과제가 삭제되었습니다.", "success");
+      showToast("자료가 삭제되었습니다.", "success");
       setConfirmDeleteId(null);
       fetchAssignments(); // 목록 새로고침
       onDelete?.(); // 부모 컴포넌트에 알림
     } catch (err) {
       console.error("Failed to delete assignment:", err);
       const message =
-        err instanceof Error ? err.message : "과제 삭제 중 오류가 발생했습니다.";
+        err instanceof Error ? err.message : "자료 삭제 중 오류가 발생했습니다.";
       showToast(message, "error");
     } finally {
       setDeletingId(null);
@@ -122,7 +122,7 @@ export default function AssignmentList({ courseId, onEdit, onDelete }: Assignmen
   if (isLoading) {
     return (
       <div className="text-center py-8 text-gray-500">
-        과제 목록을 불러오는 중...
+        자료 목록을 불러오는 중...
       </div>
     );
   }
@@ -138,15 +138,39 @@ export default function AssignmentList({ courseId, onEdit, onDelete }: Assignmen
   if (assignments.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center text-sm text-gray-500">
-        등록된 과제가 없습니다. 위의 폼을 사용하여 첫 번째 과제를 생성해보세요.
+        등록된 자료가 없습니다. 위의 폼을 사용하여 첫 번째 자료를 생성해보세요.
       </div>
     );
   }
 
   const assignmentToDelete = assignments.find((a) => a.id === confirmDeleteId);
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredAssignments = normalizedQuery
+    ? assignments.filter((a) => {
+        const inTitle = a.title.toLowerCase().includes(normalizedQuery);
+        const inDesc = (a.description || "").toLowerCase().includes(normalizedQuery);
+        const inAttachments = (a.attachments || []).some((att) =>
+          (att.originalFileName || "").toLowerCase().includes(normalizedQuery)
+        );
+        return inTitle || inDesc || inAttachments;
+      })
+    : assignments;
 
   return (
     <>
+      <div className="mb-3">
+        <label htmlFor="material-search" className="sr-only">
+          자료 검색
+        </label>
+        <input
+          id="material-search"
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="제목, 설명, 첨부 파일명으로 검색..."
+          className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+        />
+      </div>
       {confirmDeleteId && assignmentToDelete && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6"
@@ -186,8 +210,13 @@ export default function AssignmentList({ courseId, onEdit, onDelete }: Assignmen
           </div>
         </div>
       )}
+      {filteredAssignments.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center text-sm text-gray-500">
+          검색 결과가 없습니다.
+        </div>
+      ) : (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {assignments.map((assignment) => (
+        {filteredAssignments.map((assignment) => (
         <article
           key={assignment.id}
           className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm"
@@ -204,12 +233,7 @@ export default function AssignmentList({ courseId, onEdit, onDelete }: Assignmen
                   </p>
                 )}
               </div>
-              <div className="flex-shrink-0 text-right">
-                <span className="text-xs font-medium text-gray-500">마감일</span>
-                <p className="text-sm font-medium text-gray-900">
-                  {assignment.dueDate ? formatDate(assignment.dueDate) : "마감일 없음"}
-                </p>
-              </div>
+              {/* 마감일 UI 제거 */}
             </header>
 
             {(assignment.attachments && assignment.attachments.length > 0) && (
@@ -318,6 +342,7 @@ export default function AssignmentList({ courseId, onEdit, onDelete }: Assignmen
         </article>
       ))}
       </div>
+      )}
     </>
   );
 }

@@ -373,7 +373,7 @@ export default function EvaluationQuestionForm({
                         setValue(`questions.${questionIndex}.modelAnswer`, undefined);
                       }
                     }}
-                      className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                      className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
                     >
                       <option value="객관식">객관식</option>
                       <option value="서술형">서술형</option>
@@ -394,7 +394,7 @@ export default function EvaluationQuestionForm({
                       type="number"
                       min="1"
                       max="100"
-                      className="w-20 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                      className="w-20 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
                       placeholder="점수"
                     />
                     <span className="text-sm text-gray-600">점</span>
@@ -405,7 +405,7 @@ export default function EvaluationQuestionForm({
                 {...register(`questions.${questionIndex}.questionText`)}
                 id={`questionText-${questionIndex}`}
                 rows={4}
-                className="flex w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 ring-offset-white placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 placeholder="문제 지문을 입력하세요..."
               />
               {errors.questions?.[questionIndex]?.questionText && (
@@ -539,7 +539,7 @@ export default function EvaluationQuestionForm({
                     {...register(`questions.${questionIndex}.modelAnswer`)}
                     id={`modelAnswer-${questionIndex}`}
                     rows={6}
-                    className="flex w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 ring-offset-white placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     placeholder="서술형 문제의 모범답안을 입력하세요..."
                     aria-required="true"
                   />
