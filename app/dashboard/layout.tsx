@@ -43,9 +43,19 @@ export default async function DashboardLayout({
             icon: <Home className="w-5 h-5" />
           },
           {
+            href: "/dashboard/teacher/schedule",
+            label: t.sidebar.teacher.schedule,
+            icon: <Calendar className="w-5 h-5" />
+          },
+          {
             href: "/dashboard/teacher/manage-classes",
             label: t.sidebar.teacher.manageClasses,
             icon: <BookOpen className="w-5 h-5" />
+          },
+          {
+            href: "/dashboard/teacher/class-management",
+            label: t.sidebar.teacher.classManagement,
+            icon: <Users className="w-5 h-5" />
           },
           {
             href: "/dashboard/teacher/student-progress",
@@ -56,11 +66,6 @@ export default async function DashboardLayout({
             href: "/dashboard/teacher/announcements",
             label: t.sidebar.teacher.announcements,
             icon: <Bell className="w-5 h-5" />
-          },
-          {
-            href: "/dashboard/teacher/schedule",
-            label: t.sidebar.teacher.schedule,
-            icon: <Calendar className="w-5 h-5" />
           },
         ]
       : role === "student"
@@ -112,7 +117,7 @@ export default async function DashboardLayout({
       </nav>
 
       <Sidebar items={navItems} />
-      <main className="pl-[244px] xl:pl-[284px] pt-20 pb-10 sm:px-8 lg:px-10 flex-1">
+      <main className="pl-24 xl:pl-28 pt-20 pb-10 sm:px-8 lg:px-10 flex-1 transition-all duration-300">
         <div className="max-w-7xl mx-auto">
           <section className="w-full">{children}</section>
         </div>

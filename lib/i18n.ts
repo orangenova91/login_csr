@@ -115,11 +115,12 @@ export const translations = {
     },
     sidebar: {
       teacher: {
-        overview: "대시보드 홈",
-        manageClasses: "수업 관리",
+        overview: "홈",
+        manageClasses: "내 수업",
+        classManagement: "학급 관리",
         studentProgress: "학생 성과",
         announcements: "공지 관리",
-        schedule: "일정 보기",
+        schedule: "학사 일정",
       },
       student: {
         overview: "대시보드 홈",
@@ -245,6 +246,7 @@ export const translations = {
       teacher: {
         overview: "Overview",
         manageClasses: "Manage Classes",
+        classManagement: "Class Management",
         studentProgress: "Student Progress",
         announcements: "Announcements",
         schedule: "Schedule",
