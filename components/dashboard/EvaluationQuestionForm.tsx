@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -80,17 +80,81 @@ const questionsSchema = z.object({
 
 type QuestionsFormValues = z.infer<typeof questionsSchema>;
 
+interface EvaluationQuestionInitialData {
+  unit: string;
+  questionNumber: string;
+  questions: Array<{
+    questionType: "객관식" | "서술형";
+    questionText: string;
+    points: number;
+    options?: Array<{ text: string }>;
+    correctAnswer?: number;
+    modelAnswer?: string;
+  }>;
+}
+
 interface EvaluationQuestionFormProps {
   courseId: string;
   onSuccess?: () => void;
+  mode?: "create" | "edit";
+  initialData?: EvaluationQuestionInitialData;
+  evaluationQuestionId?: string;
 }
+
+const getEmptyFormValues = (): QuestionsFormValues => ({
+  unit: "",
+  questionNumber: "",
+  questions: [
+    {
+      questionType: "객관식",
+      questionText: "",
+      points: 1,
+      options: [{ text: "" }, { text: "" }],
+      correctAnswer: -1,
+    },
+  ],
+});
+
+const mapInitialDataToFormValues = (
+  initialData: EvaluationQuestionInitialData
+): QuestionsFormValues => ({
+  unit: initialData.unit,
+  questionNumber: initialData.questionNumber,
+  questions: initialData.questions.map((question) => {
+    if (question.questionType === "객관식") {
+      const safeOptions =
+        question.options && question.options.length >= 2
+          ? question.options
+          : [{ text: "" }, { text: "" }];
+      return {
+        questionType: "객관식" as const,
+        questionText: question.questionText,
+        points: question.points,
+        options: safeOptions,
+        correctAnswer:
+          typeof question.correctAnswer === "number" ? question.correctAnswer : -1,
+      };
+    }
+
+    return {
+      questionType: "서술형" as const,
+      questionText: question.questionText,
+      points: question.points,
+      modelAnswer: question.modelAnswer ?? "",
+    };
+  }),
+});
 
 export default function EvaluationQuestionForm({
   courseId,
   onSuccess,
+  mode = "create",
+  initialData,
+  evaluationQuestionId,
 }: EvaluationQuestionFormProps) {
   const { showToast } = useToastContext();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isEditMode = mode === "edit" && !!evaluationQuestionId;
 
   const {
     register,
@@ -103,19 +167,7 @@ export default function EvaluationQuestionForm({
     getValues,
   } = useForm<QuestionsFormValues>({
     resolver: zodResolver(questionsSchema),
-    defaultValues: {
-      unit: "",
-      questionNumber: "",
-      questions: [
-        {
-          questionType: "객관식" as const,
-          questionText: "",
-          points: 1,
-          options: [{ text: "" }, { text: "" }],
-          correctAnswer: -1,
-        },
-      ],
-    },
+    defaultValues: getEmptyFormValues(),
   });
 
   const {
@@ -128,6 +180,14 @@ export default function EvaluationQuestionForm({
   });
 
   const watchedQuestions = watch("questions");
+
+  useEffect(() => {
+    if (isEditMode && initialData) {
+      reset(mapInitialDataToFormValues(initialData));
+    } else if (!isEditMode) {
+      reset(getEmptyFormValues());
+    }
+  }, [isEditMode, initialData, reset]);
 
   const addQuestion = () => {
     appendQuestion({
@@ -172,8 +232,12 @@ export default function EvaluationQuestionForm({
         return;
       }
 
-      const response = await fetch(`/api/courses/${courseId}/evaluation-questions`, {
-        method: "POST",
+      const endpoint = isEditMode
+        ? `/api/courses/${courseId}/evaluation-questions/${evaluationQuestionId}`
+        : `/api/courses/${courseId}/evaluation-questions`;
+
+      const response = await fetch(endpoint, {
+        method: isEditMode ? "PUT" : "POST",
         headers: {
           "Content-Type": "application/json",
         },
@@ -231,20 +295,18 @@ export default function EvaluationQuestionForm({
         throw new Error(errorMessage);
       }
 
-      showToast(`${values.questions.length}개의 평가 문항이 생성되었습니다.`, "success");
-      reset({
-        unit: "",
-        questionNumber: "",
-        questions: [
-          {
-            questionType: "객관식" as const,
-            questionText: "",
-            points: 1,
-            options: [{ text: "" }, { text: "" }],
-            correctAnswer: -1,
-          },
-        ],
-      });
+      showToast(
+        isEditMode
+          ? "평가 문항이 수정되었습니다."
+          : `${values.questions.length}개의 평가 문항이 생성되었습니다.`,
+        "success"
+      );
+
+      if (isEditMode && initialData) {
+        reset(mapInitialDataToFormValues(initialData));
+      } else {
+        reset(getEmptyFormValues());
+      }
       onSuccess?.();
     } catch (error) {
       console.error(error);
@@ -568,25 +630,17 @@ export default function EvaluationQuestionForm({
             type="button"
             variant="outline"
             onClick={() => {
-              reset({
-                unit: "",
-                questionNumber: "",
-                questions: [
-                  {
-                    questionType: "객관식" as const,
-                    questionText: "",
-                    points: 1,
-                    options: [{ text: "" }, { text: "" }],
-                    correctAnswer: -1,
-                  },
-                ],
-              });
+              if (isEditMode && initialData) {
+                reset(mapInitialDataToFormValues(initialData));
+              } else {
+                reset(getEmptyFormValues());
+              }
             }}
           >
             초기화
           </Button>
           <Button type="submit" isLoading={isSubmitting}>
-            문항 생성하기
+            {isEditMode ? "문항 수정하기" : "문항 생성하기"}
           </Button>
         </div>
       </div>
