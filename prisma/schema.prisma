@@ -34,6 +34,7 @@ model User {
   sessions       Session[]
   classes        Course[]        @relation("TeacherCourses")
   studentProfile StudentProfile?
+  teacherProfile TeacherProfile?
 
   @@map("users")
 }
@@ -214,4 +215,26 @@ model StudentProfile {
   updatedAt                  DateTime @updatedAt
 
   @@map("student_profiles")
+}
+
+model TeacherProfile {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String   @unique @db.ObjectId
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  school       String?
+  roleLabel    String?
+  major        String?
+  classLabel   String?
+  grade        String?
+  section      String?
+  phoneNumber  String?
+  remarks      String?
+  club         String?
+  clubLocation String?
+  dateOfBirth  String?
+  address      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("teacher_profiles")
 }
