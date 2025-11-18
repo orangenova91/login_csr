@@ -11,28 +11,29 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(auto()) @map("_id") @db.ObjectId
-  email         String    @unique
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  email          String    @unique
   hashedPassword String
-  name          String?
-  school        String?
-  role          String?   // "student" 또는 "teacher"
-  emailVerified DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
+  name           String?
+  school         String?
+  role           String? // "student" 또는 "teacher"
+  emailVerified  DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
   // Password reset
   resetPasswordToken   String?
   resetPasswordExpires DateTime?
-  
+
   // Email verification
   verificationToken   String?
   verificationExpires DateTime?
-  
+
   // Relations
-  accounts Account[]
-  sessions Session[]
-  classes  Course[]  @relation("TeacherCourses")
+  accounts       Account[]
+  sessions       Session[]
+  classes        Course[]        @relation("TeacherCourses")
+  studentProfile StudentProfile?
 
   @@map("users")
 }
@@ -78,43 +79,43 @@ model VerificationToken {
 }
 
 model Course {
-  id                   String                @id @default(auto()) @map("_id") @db.ObjectId
-  academicYear         String                @default("")
-  semester             String                @default("")
-  subjectGroup         String                @default("")
-  subjectArea          String                @default("")
-  careerTrack          String                @default("")
-  subject              String
-  grade                String
-  instructor           String
-  classroom            String
-  description          String                @default("")
-  joinCode             String?
-  teacherId            String?               @db.ObjectId
-  teacher              User?                 @relation("TeacherCourses", fields: [teacherId], references: [id], onDelete: SetNull)
-  assignments          Assignment[]
-  evaluationQuestions  EvaluationQuestion[]
-  classGroups          ClassGroup[]
-  createdAt            DateTime              @default(now())
-  updatedAt            DateTime              @updatedAt
+  id                  String               @id @default(auto()) @map("_id") @db.ObjectId
+  academicYear        String               @default("")
+  semester            String               @default("")
+  subjectGroup        String               @default("")
+  subjectArea         String               @default("")
+  careerTrack         String               @default("")
+  subject             String
+  grade               String
+  instructor          String
+  classroom           String
+  description         String               @default("")
+  joinCode            String?
+  teacherId           String?              @db.ObjectId
+  teacher             User?                @relation("TeacherCourses", fields: [teacherId], references: [id], onDelete: SetNull)
+  assignments         Assignment[]
+  evaluationQuestions EvaluationQuestion[]
+  classGroups         ClassGroup[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
 
   @@map("classes")
 }
 
 model Assignment {
-  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  id               String                 @id @default(auto()) @map("_id") @db.ObjectId
   title            String
   description      String?
-  filePath         String?   // 서버에 저장된 파일 경로
-  originalFileName String?   // 원본 파일명
-  fileSize         Int?      // 파일 크기 (bytes)
-  mimeType         String?   // 파일 MIME 타입
+  filePath         String? // 서버에 저장된 파일 경로
+  originalFileName String? // 원본 파일명
+  fileSize         Int? // 파일 크기 (bytes)
+  mimeType         String? // 파일 MIME 타입
   dueDate          DateTime? // 마감일 (선택적)
-  courseId         String    @db.ObjectId
-  course           Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  teacherId        String    @db.ObjectId
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  courseId         String                 @db.ObjectId
+  course           Course                 @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  teacherId        String                 @db.ObjectId
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
   attachments      AssignmentAttachment[] // 다중 첨부파일
 
   @@map("assignments")
@@ -135,9 +136,9 @@ model AssignmentAttachment {
 
 model EvaluationQuestion {
   id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  unit           String   // 평가 단원
-  questionNumber String   // 문제 주문번호
-  questions      String   // JSON 배열로 저장된 문항들
+  unit           String // 평가 단원
+  questionNumber String // 문제 주문번호
+  questions      String // JSON 배열로 저장된 문항들
   courseId       String   @db.ObjectId
   course         Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   teacherId      String   @db.ObjectId
@@ -148,17 +149,17 @@ model EvaluationQuestion {
 }
 
 model ClassGroup {
-  id          String      @id @default(auto()) @map("_id") @db.ObjectId
-  name        String      // 학반명
-  period      String?     // 차시
-  schedules   String      // JSON 배열로 저장된 스케줄 (요일과 교시)
-  courseId    String      @db.ObjectId
-  course      Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  studentIds  String[]    // 학생 ID 배열
-  teacherId   String      @db.ObjectId
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  name        String // 학반명
+  period      String? // 차시
+  schedules   String // JSON 배열로 저장된 스케줄 (요일과 교시)
+  courseId    String       @db.ObjectId
+  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  studentIds  String[] // 학생 ID 배열
+  teacherId   String       @db.ObjectId
   attendances Attendance[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 
   @@map("class_groups")
 }
@@ -168,8 +169,8 @@ model Attendance {
   classGroupId String     @db.ObjectId
   classGroup   ClassGroup @relation(fields: [classGroupId], references: [id], onDelete: Cascade)
   studentId    String     @db.ObjectId
-  date         DateTime   // 출결 날짜
-  status       String     // 출결 상태: "present", "late", "sick_leave", "approved_absence", "excused"
+  date         DateTime // 출결 날짜
+  status       String // 출결 상태: "present", "late", "sick_leave", "approved_absence", "excused"
   teacherId    String     @db.ObjectId
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
@@ -178,3 +179,39 @@ model Attendance {
   @@map("attendances")
 }
 
+model StudentProfile {
+  id                         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId                     String   @unique @db.ObjectId
+  user                       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  studentId                  String?
+  school                     String?
+  grade                      String?
+  classLabel                 String?
+  section                    String?
+  seatNumber                 String?
+  major                      String?
+  sex                        String?
+  classOfficer               String?
+  specialEducation           String?
+  phoneNumber                String?
+  siblings                   String?
+  academicStatus             String?
+  remarks                    String?
+  club                       String?
+  clubTeacher                String?
+  clubLocation               String?
+  dateOfBirth                String?
+  address                    String?
+  residentRegistrationNumber String?
+  motherName                 String?
+  motherPhone                String?
+  motherRemarks              String?
+  fatherName                 String?
+  fatherPhone                String?
+  fatherRemarks              String?
+  electiveSubjects           String[]
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  @@map("student_profiles")
+}

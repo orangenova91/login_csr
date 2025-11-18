@@ -364,11 +364,11 @@ export default function StudentEvaluation({ courseId }: StudentEvaluationProps) 
 
         {/* 슬라이드 패널 */}
         <div
-          className={`absolute top-0 right-0 h-full w-full max-w-2xl bg-white shadow-xl transform transition-transform duration-300 ease-in-out ${
+          className={`absolute top-10 bottom-10 right-0 w-full max-w-2xl bg-white shadow-2xl rounded-l-3xl transform transition-transform duration-300 ease-in-out ${
             isPanelOpen ? "translate-x-0" : "translate-x-full"
           }`}
         >
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col h-full rounded-l-3xl overflow-hidden">
             {/* 헤더 */}
             <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
               <h3 className="text-lg font-semibold text-gray-900">{panelTitle}</h3>
