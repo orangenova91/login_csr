@@ -6,18 +6,19 @@ import { getTranslations } from "@/lib/i18n";
 import SignOutButton from "@/components/dashboard/SignOutButton";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Footer } from "@/components/dashboard/Footer";
-import { 
-  Home, 
-  Calendar, 
-  BookOpen, 
-  FileText, 
-  Folder, 
-  BarChart, 
-  Users, 
+import {
+  Home,
+  Calendar,
+  BookOpen,
+  FileText,
+  Folder,
+  BarChart,
+  Users,
   Settings,
   TrendingUp,
   Bell,
-  HelpCircle
+  HelpCircle,
+  Shield,
 } from "lucide-react";
 
 export default async function DashboardLayout({
@@ -96,6 +97,39 @@ export default async function DashboardLayout({
             icon: <HelpCircle className="w-5 h-5" />
           },
         ]
+      : role === "admin"
+      ? [
+          {
+            href: "/dashboard/admin/overview",
+            label: "운영 현황",
+            icon: <Shield className="w-5 h-5" />,
+          },
+          {
+            href: "/dashboard/admin/users",
+            label: "사용자 관리",
+            icon: <Users className="w-5 h-5" />,
+          },
+          {
+            href: "/dashboard/admin/content",
+            label: "콘텐츠·공지",
+            icon: <Folder className="w-5 h-5" />,
+          },
+          {
+            href: "/dashboard/admin/alerts",
+            label: "알림 센터",
+            icon: <Bell className="w-5 h-5" />,
+          },
+          {
+            href: "/dashboard/admin/reports",
+            label: "리포트",
+            icon: <BarChart className="w-5 h-5" />,
+          },
+          {
+            href: "/dashboard/admin/system",
+            label: "시스템 설정",
+            icon: <Settings className="w-5 h-5" />,
+          },
+        ]
       : [];
 
   return (
@@ -117,7 +151,7 @@ export default async function DashboardLayout({
       </nav>
 
       <Sidebar items={navItems} />
-      <main className="pl-24 xl:pl-28 pt-20 pb-10 sm:px-8 lg:px-10 flex-1 transition-all duration-300">
+      <main className="ml-16 xl:ml-20 pt-20 pb-10 px-4 sm:px-8 lg:px-10 flex-1 transition-all duration-300">
         <div className="max-w-7xl mx-auto">
           <section className="w-full">{children}</section>
         </div>

@@ -72,6 +72,27 @@ npm run dev
 
 브라우저에서 [http://localhost:3000](http://localhost:3000)을 열어주세요.
 
+### 5. 관리자 계정 생성
+
+운영자가 처음 시스템에 접속할 수 있도록 관리자 계정을 하나 만들어주세요. 아래 스크립트는 Prisma를 사용해 `role: "admin"` 사용자를 생성하거나, 이미 존재하는 이메일의 계정을 관리자 권한으로 갱신합니다.
+
+```bash
+# 인터랙티브 입력
+npx tsx scripts/create-admin-user.ts
+
+# 또는 비대화형 실행
+npx tsx scripts/create-admin-user.ts \
+  --email admin@example.com \
+  --password "Abcd1234!" \
+  --name "시스템 관리자" \
+  --school "SchoolHub" \
+  --force
+```
+
+- `--email`, `--password` 는 필수입니다.
+- `--name`, `--school` 은 기본값(각각 "관리자", "SchoolHub")으로 채워집니다.
+- `--force` 를 추가하면 동일한 이메일이 이미 존재하더라도 비밀번호·역할을 강제로 갱신합니다.
+
 ## 프로젝트 구조
 
 ```

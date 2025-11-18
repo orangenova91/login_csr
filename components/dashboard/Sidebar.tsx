@@ -21,6 +21,7 @@ const EXPANDED_WIDTH = "w-[220px] xl:w-[260px]";
 export function Sidebar({ items }: SidebarProps) {
   const pathname = usePathname();
   const [isExpanded, setIsExpanded] = useState(false);
+  const rootPaths = ["/dashboard", "/dashboard/teacher", "/dashboard/student", "/dashboard/admin"];
 
   if (!items.length) {
     return null;
@@ -38,12 +39,11 @@ export function Sidebar({ items }: SidebarProps) {
       <nav aria-label="Dashboard navigation" className="h-full p-4">
         <ul className="space-y-3">
           {items.map((item) => {
+            const targetPath = item.href.split("#")[0];
+            const isBasePath = rootPaths.includes(targetPath);
             const isActive =
-              pathname === item.href ||
-              (item.href !== "/dashboard" &&
-                item.href !== "/dashboard/teacher" &&
-                item.href !== "/dashboard/student" &&
-                pathname.startsWith(item.href + "/"));
+              pathname === targetPath ||
+              (!isBasePath && pathname.startsWith(targetPath + "/"));
             return (
               <li key={item.href}>
                 <Link
