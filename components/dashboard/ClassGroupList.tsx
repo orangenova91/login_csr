@@ -257,7 +257,7 @@ export default function ClassGroupList({
     return (
       <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-6 text-center">
         <p className="text-sm text-gray-500">
-          생성된 학반이 없습니다. 상단의 "학반 생성" 버튼을 클릭하여 학반을
+          생성된 학반이 없습니다. 상단의 학반 생성 버튼을 클릭하여 학반을
           만들어보세요.
         </p>
       </div>
