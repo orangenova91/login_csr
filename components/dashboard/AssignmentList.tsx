@@ -52,11 +52,11 @@ export default function AssignmentList({ courseId, onEdit, onDelete }: Assignmen
     } finally {
       setIsLoading(false);
     }
+    useEffect(() => {
+      fetchAssignments();
+    }, [courseId]);
   };
 
-  useEffect(() => {
-    fetchAssignments();
-  }, [courseId]);
 
   // 메뉴 외부 클릭 시 닫기
   useEffect(() => {
@@ -186,7 +186,7 @@ export default function AssignmentList({ courseId, onEdit, onDelete }: Assignmen
               과제 삭제 확인
             </h3>
             <p className="text-sm text-gray-600 mb-6">
-              정말로 "{assignmentToDelete.title}" 과제를 삭제하시겠습니까?
+              정말로 {assignmentToDelete.title} 과제를 삭제하시겠습니까?
               <br />
               이 작업은 되돌릴 수 없습니다.
             </p>
