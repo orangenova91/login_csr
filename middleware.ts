@@ -10,7 +10,21 @@ export default withAuth(
     callbacks: {
       authorized: ({ token, req }) => {
         // 보호된 라우트 확인
-        if (req.nextUrl.pathname.startsWith("/dashboard")) {
+        const { pathname } = req.nextUrl;
+
+        if (!token) {
+          return false;
+        }
+
+        if (pathname.startsWith("/dashboard/teacher")) {
+          return token.role === "teacher";
+        }
+
+        if (pathname.startsWith("/dashboard/student")) {
+          return token.role === "student";
+        }
+
+        if (pathname.startsWith("/dashboard")) {
           return !!token;
         }
         return true;
