@@ -12,6 +12,11 @@
     "db:studio": "prisma studio"
   },
   "dependencies": {
+    "@fullcalendar/core": "^6.1.19",
+    "@fullcalendar/daygrid": "^6.1.19",
+    "@fullcalendar/interaction": "^6.1.19",
+    "@fullcalendar/react": "^6.1.19",
+    "@fullcalendar/timegrid": "^6.1.19",
     "@hookform/resolvers": "^3.3.4",
     "@prisma/client": "^5.11.0",
     "@tiptap/extension-link": "^3.10.7",
