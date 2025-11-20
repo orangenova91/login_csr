@@ -129,9 +129,17 @@ export default async function TeacherDashboardPage() {
     <div className="space-y-6">
       <header className="border-4 border-dashed border-gray-200 rounded-lg p-8 bg-white">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          {t.dashboard.teacherTitle}
+          안녕하세요 {session.user.name ?? t.dashboard.roleTeacher} 선생님 반갑습니다. :)
         </h2>
-        <p className="text-gray-600">{t.dashboard.teacherDescription}</p>
+        <p className="text-gray-600">
+          오늘은{" "}
+          {new Intl.DateTimeFormat("ko-KR", {
+            month: "2-digit",
+            day: "2-digit",
+            weekday: "long",
+          }).format(now)}{" "}
+          입니다.
+        </p>
         <div className="mt-6 bg-blue-50 border border-blue-100 rounded-lg p-4 text-sm text-blue-800">
           {session.user.school
             ? `${session.user.school} · ${t.dashboard.roleTeacher}`
