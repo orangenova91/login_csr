@@ -4,6 +4,9 @@ import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+const PERIOD_VALUES = ["1", "2", "3", "4", "5", "6", "7", "8", "9"] as const;
+const GRADE_VALUES = ["1", "2", "3"] as const;
+
 const updateEventSchema = z.object({
   title: z.string().trim().min(1, "제목을 입력하세요").max(200, "제목은 200자 이하여야 합니다").optional(),
   description: z.string().trim().max(1000, "설명은 1000자 이하여야 합니다").optional(),
@@ -12,6 +15,8 @@ const updateEventSchema = z.object({
   eventType: z.enum(["평가", "행사", "휴업일", "개인일정", "기타"]).optional(),
   department: z.string().trim().max(100, "담당 부서는 100자 이하여야 합니다").optional(),
   responsiblePerson: z.string().trim().max(100, "담당자는 100자 이하여야 합니다").optional(),
+  gradeLevels: z.array(z.enum(GRADE_VALUES)).optional(),
+  periods: z.array(z.enum(PERIOD_VALUES)).optional(),
 });
 
 export async function PATCH(
@@ -60,6 +65,8 @@ export async function PATCH(
     if (validatedData.eventType !== undefined) updateData.eventType = validatedData.eventType;
     if (validatedData.department !== undefined) updateData.department = validatedData.department || null;
     if (validatedData.responsiblePerson !== undefined) updateData.responsiblePerson = validatedData.responsiblePerson || null;
+    if (validatedData.gradeLevels !== undefined) updateData.gradeLevels = validatedData.gradeLevels ?? [];
+    if (validatedData.periods !== undefined) updateData.periods = validatedData.periods ?? [];
 
     const updatedEvent = await prisma.calendarEvent.update({
       where: { id: eventId },

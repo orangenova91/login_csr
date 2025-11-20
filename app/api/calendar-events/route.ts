@@ -4,6 +4,9 @@ import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+const PERIOD_VALUES = ["1", "2", "3", "4", "5", "6", "7", "8", "9"] as const;
+const GRADE_VALUES = ["1", "2", "3"] as const;
+
 const createEventSchema = z.object({
   title: z.string().trim().min(1, "제목을 입력하세요").max(200, "제목은 200자 이하여야 합니다"),
   description: z.string().trim().max(1000, "설명은 1000자 이하여야 합니다").optional(),
@@ -15,6 +18,8 @@ const createEventSchema = z.object({
   courseId: z.string().optional(),
   department: z.string().trim().max(100, "담당 부서는 100자 이하여야 합니다").optional(),
   responsiblePerson: z.string().trim().max(100, "담당자는 100자 이하여야 합니다").optional(),
+  gradeLevels: z.array(z.enum(GRADE_VALUES)).optional(),
+  periods: z.array(z.enum(PERIOD_VALUES)).optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -77,6 +82,8 @@ export async function GET(request: NextRequest) {
       courseId: string | null;
       department: string | null;
       responsiblePerson: string | null;
+      gradeLevels: string[];
+      periods: string[];
     }>;
 
     // FullCalendar 형식으로 변환
@@ -94,6 +101,8 @@ export async function GET(request: NextRequest) {
         courseId: event.courseId,
         department: event.department,
         responsiblePerson: event.responsiblePerson,
+        gradeLevels: event.gradeLevels || [],
+        periods: event.periods || [],
       },
     }));
 
@@ -149,6 +158,8 @@ export async function POST(request: NextRequest) {
         courseId: validatedData.courseId || null,
         department: validatedData.department || null,
         responsiblePerson: validatedData.responsiblePerson || null,
+        gradeLevels: validatedData.gradeLevels ?? [],
+        periods: validatedData.periods ?? [],
         createdBy: session.user.id,
       },
     });

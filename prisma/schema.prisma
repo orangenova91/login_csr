@@ -250,8 +250,10 @@ model CalendarEvent {
   school           String?  // scope가 "school"일 때 학교 필터링
   teacherId        String?  @db.ObjectId // 개인일정일 때
   courseId         String?  @db.ObjectId // 수업별 일정일 때
-  department       String?  // 담당 부서
-  responsiblePerson String? // 담당자
+  department        String?   // 담당 부서
+  responsiblePerson String?   // 담당자
+  gradeLevels       String[] @default([])
+  periods           String[]  @default([])
   createdBy        String   @db.ObjectId // 생성한 사용자 ID
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt

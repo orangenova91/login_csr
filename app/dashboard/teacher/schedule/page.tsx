@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { getTranslations } from "@/lib/i18n";
 import { prisma } from "@/lib/prisma";
-import CalendarView from "@/components/dashboard/CalendarView";
+import TeacherScheduleClient from "@/components/dashboard/TeacherScheduleClient";
 
 export default async function TeacherSchedulePage() {
   const session = await getServerSession(authOptions);
@@ -80,15 +80,17 @@ export default async function TeacherSchedulePage() {
   }));
 
   return (
-    <div className="border-4 border-dashed border-gray-200 rounded-lg p-8 bg-white space-y-6">
-      <header>
-        <h1 className="text-2xl font-bold text-gray-900">{t.dashboard.teacherScheduleTitle}</h1>
-        <p className="mt-2 text-sm text-gray-600">
-          개인 일정과 학교 공통 일정을 함께 확인하고 관리할 수 있습니다.
-        </p>
-      </header>
+    <div className="space-y-6">
+      <div className="border-4 border-dashed border-gray-200 rounded-lg p-8 bg-white">
+        <header>
+          <h1 className="text-2xl font-bold text-gray-900">{t.dashboard.teacherScheduleTitle}</h1>
+          <p className="mt-2 text-sm text-gray-600">
+            개인 일정과 학교 공통 일정을 함께 확인하고 관리할 수 있습니다.
+          </p>
+        </header>
+      </div>
 
-      <CalendarView initialEvents={formattedEvents} />
+      <TeacherScheduleClient initialEvents={formattedEvents} />
     </div>
   );
 }

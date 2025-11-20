@@ -9,8 +9,13 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ className, label, error, id, type = "text", readOnly, ...props }, ref) => {
+  ({ className, label, error, id, type = "text", readOnly, required, ...props }, ref) => {
     const inputId = id || `input-${Math.random().toString(36).substring(7)}`;
+    const ariaRequired = props["aria-required"];
+    const isRequired =
+      typeof required === "boolean"
+        ? required
+        : ariaRequired === true || ariaRequired === "true";
 
     return (
       <div className="w-full">
@@ -20,6 +25,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             className="block text-sm font-medium text-gray-700 mb-1"
           >
             {label}
+            {isRequired && <span className="ml-1 text-red-500">*</span>}
           </label>
         )}
         <input
@@ -27,6 +33,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           id={inputId}
           type={type}
           readOnly={readOnly}
+          required={required}
           className={cn(
             "flex h-10 w-full rounded-md border border-gray-300 px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
             readOnly 

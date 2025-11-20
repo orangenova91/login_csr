@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -11,7 +17,7 @@ import { Button } from "@/components/ui/Button";
 import { useToastContext } from "@/components/providers/ToastProvider";
 import "@/app/calendar.css"; // FullCalendar 스타일
 
-interface CalendarEvent {
+export interface CalendarEvent {
   id: string;
   title: string;
   description?: string;
@@ -23,14 +29,25 @@ interface CalendarEvent {
     scope: string;
     school?: string;
     courseId?: string;
+    department?: string;
+    responsiblePerson?: string;
+    gradeLevels?: string[];
+    periods?: string[];
+    description?: string;
   };
 }
 
 type CalendarViewProps = {
   initialEvents?: CalendarEvent[];
+  onEventsChange?: (events: CalendarEvent[]) => void;
 };
 
-export default function CalendarView({ initialEvents = [] }: CalendarViewProps) {
+export type CalendarViewHandle = {
+  openEventModal: (event: CalendarEvent) => void;
+};
+
+const CalendarView = forwardRef<CalendarViewHandle, CalendarViewProps>(
+  ({ initialEvents = [], onEventsChange }, ref) => {
   const { showToast } = useToastContext();
   const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -40,7 +57,22 @@ export default function CalendarView({ initialEvents = [] }: CalendarViewProps) 
   const [calendarRef, setCalendarRef] = useState<FullCalendar | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 일정 목록 새로고침
+    const openEventModal = useCallback((eventData: CalendarEvent) => {
+      setSelectedEvent(eventData);
+      setSelectedDate(null);
+      setSelectedEndDate(null);
+      setIsModalOpen(true);
+    }, []);
+
+    useImperativeHandle(
+      ref,
+      () => ({
+        openEventModal,
+      }),
+      [openEventModal]
+    );
+
+    // 일정 목록 새로고침
   const refreshEvents = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -73,20 +105,19 @@ export default function CalendarView({ initialEvents = [] }: CalendarViewProps) 
     refreshEvents();
   }, [refreshEvents]);
 
-  // 일정 클릭
-  const handleEventClick = (clickInfo: EventClickArg) => {
-    const eventData: CalendarEvent = {
-      id: clickInfo.event.id,
-      title: clickInfo.event.title,
-      description: clickInfo.event.extendedProps.description,
-      start: clickInfo.event.start?.toISOString() || "",
-      end: clickInfo.event.end?.toISOString() || null,
-      allDay: clickInfo.event.allDay,
-      extendedProps: clickInfo.event.extendedProps,
+    // 일정 클릭
+    const handleEventClick = (clickInfo: EventClickArg) => {
+      const eventData: CalendarEvent = {
+        id: clickInfo.event.id,
+        title: clickInfo.event.title,
+        description: clickInfo.event.extendedProps.description,
+        start: clickInfo.event.start?.toISOString() || "",
+        end: clickInfo.event.end?.toISOString() || null,
+        allDay: clickInfo.event.allDay,
+        extendedProps: clickInfo.event.extendedProps as CalendarEvent["extendedProps"],
+      };
+      openEventModal(eventData);
     };
-    setSelectedEvent(eventData);
-    setIsModalOpen(true);
-  };
 
   // 날짜/시간 선택 (일정 추가)
   const handleDateSelect = (selectInfo: DateSelectArg) => {
@@ -153,67 +184,76 @@ export default function CalendarView({ initialEvents = [] }: CalendarViewProps) 
     };
   });
 
-  return (
-    <div className="w-full">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-gray-900">학사일정</h2>
-        <Button
-          variant="primary"
-          onClick={() => {
-            setSelectedDate(new Date());
-            setSelectedEndDate(null);
-            setSelectedEvent(null);
-            setIsModalOpen(true);
-          }}
-        >
-          일정 추가
-        </Button>
-      </div>
+  useEffect(() => {
+    onEventsChange?.(events);
+  }, [events, onEventsChange]);
 
-      <div className="rounded-lg border border-gray-200 bg-white p-4">
-        <FullCalendar
-          ref={(ref) => setCalendarRef(ref)}
-          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-          initialView="dayGridMonth"
-          headerToolbar={{
-            left: "prev,next today",
-            center: "title",
-            right: "dayGridMonth,timeGridWeek,timeGridDay",
-          }}
-          locale="ko"
-          editable={true}
-          selectable={true}
-          selectMirror={true}
-          dayMaxEvents={true}
-          weekends={true}
-          events={calendarEvents}
-          eventClick={handleEventClick}
-          select={handleDateSelect}
-          datesSet={handleDatesSet}
-          height="auto"
-          eventDisplay="block"
-          dayHeaderFormat={{ weekday: "short" }}
-          buttonText={{
-            today: "오늘",
-            month: "월",
-            week: "주",
-            day: "일",
-          }}
-        />
-      </div>
+    return (
+      <div className="w-full">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-gray-900">학사일정</h2>
+          <Button
+            variant="primary"
+            onClick={() => {
+              setSelectedDate(new Date());
+              setSelectedEndDate(null);
+              setSelectedEvent(null);
+              setIsModalOpen(true);
+            }}
+          >
+            일정 추가
+          </Button>
+        </div>
 
-      {isModalOpen && (
-        <EventModal
-          isOpen={isModalOpen}
-          onClose={handleCloseModal}
-          event={selectedEvent}
-          selectedDate={selectedDate}
-          selectedEndDate={selectedEndDate}
-          onSaved={handleEventSaved}
-          onDeleted={handleEventDeleted}
-        />
-      )}
-    </div>
-  );
-}
+        <div className="rounded-lg border border-gray-200 bg-white p-4">
+          <FullCalendar
+            ref={(ref) => setCalendarRef(ref)}
+            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+            initialView="dayGridMonth"
+            headerToolbar={{
+              left: "prev,next today",
+              center: "title",
+              right: "dayGridMonth,timeGridWeek,timeGridDay",
+            }}
+            locale="ko"
+            editable={true}
+            selectable={true}
+            selectMirror={true}
+            dayMaxEvents={true}
+            weekends={true}
+            events={calendarEvents}
+            eventClick={handleEventClick}
+            select={handleDateSelect}
+            datesSet={handleDatesSet}
+            height="auto"
+            eventDisplay="block"
+            dayHeaderFormat={{ weekday: "short" }}
+            buttonText={{
+              today: "오늘",
+              month: "월",
+              week: "주",
+              day: "일",
+            }}
+          />
+        </div>
+
+        {isModalOpen && (
+          <EventModal
+            isOpen={isModalOpen}
+            onClose={handleCloseModal}
+            event={selectedEvent}
+            selectedDate={selectedDate}
+            selectedEndDate={selectedEndDate}
+            onSaved={handleEventSaved}
+            onDeleted={handleEventDeleted}
+          />
+        )}
+      </div>
+    );
+  }
+);
+
+CalendarView.displayName = "CalendarView";
+
+export default CalendarView;
 

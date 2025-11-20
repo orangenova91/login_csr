@@ -9,6 +9,11 @@ import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
 import { useToastContext } from "@/components/providers/ToastProvider";
 
+const PERIOD_VALUES = ["1", "2", "3", "4", "5", "6", "7", "8", "9"] as const;
+const GRADE_VALUES = ["1", "2", "3"] as const;
+type PeriodValue = (typeof PERIOD_VALUES)[number];
+type GradeValue = (typeof GRADE_VALUES)[number];
+
 const eventFormSchema = z.object({
   title: z.string().trim().min(1, "제목을 입력하세요").max(200, "제목은 200자 이하여야 합니다"),
   description: z.string().trim().max(1000, "설명은 1000자 이하여야 합니다").optional(),
@@ -16,11 +21,17 @@ const eventFormSchema = z.object({
   startTime: z.string().optional(),
   endDate: z.string().optional(),
   endTime: z.string().optional(),
-  eventType: z.enum(["평가", "행사", "휴업일", "개인일정", "기타"]),
-  scope: z.enum(["school", "personal"]),
+  eventType: z.enum(["평가", "행사", "휴업일", "개인일정", "기타"], {
+    required_error: "일정 유형을 선택하세요",
+  }),
+  scope: z.enum(["school", "personal"], {
+    required_error: "범위를 선택하세요",
+  }),
   allDay: z.boolean().default(true),
   department: z.string().trim().max(100, "담당 부서는 100자 이하여야 합니다").optional(),
   responsiblePerson: z.string().trim().max(100, "담당자는 100자 이하여야 합니다").optional(),
+  gradeLevels: z.array(z.enum(GRADE_VALUES)).optional(),
+  periods: z.array(z.enum(PERIOD_VALUES)).optional(),
 });
 
 type EventFormValues = z.infer<typeof eventFormSchema>;
@@ -39,6 +50,8 @@ interface CalendarEvent {
     courseId?: string;
     department?: string;
     responsiblePerson?: string;
+    gradeLevels?: string[];
+    periods?: string[];
   };
 }
 
@@ -81,16 +94,31 @@ export default function EventModal({
       startTime: "",
       endDate: "",
       endTime: "",
-      eventType: "개인일정",
-      scope: "personal",
+      eventType: "" as any,
+      scope: "" as any,
       allDay: true,
       department: "",
       responsiblePerson: "",
+      gradeLevels: [] as GradeValue[],
+      periods: [] as PeriodValue[],
     },
   });
 
   const allDay = watch("allDay");
   const scope = watch("scope");
+
+  // ESC key to close modal
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
 
   // 이벤트가 있으면 수정 모드로 폼 채우기
   useEffect(() => {
@@ -118,6 +146,8 @@ export default function EventModal({
         allDay: event.allDay,
         department: event.extendedProps.department || "",
         responsiblePerson: event.extendedProps.responsiblePerson || "",
+        gradeLevels: (event.extendedProps.gradeLevels || []) as GradeValue[],
+        periods: (event.extendedProps.periods || []) as PeriodValue[],
       });
     } else if (selectedDate) {
       // 새 일정인 경우 선택된 날짜로 초기화
@@ -139,11 +169,13 @@ export default function EventModal({
         startTime: "",
         endDate: endDateStr,
         endTime: "",
-        eventType: "개인일정",
-        scope: "personal",
+        eventType: "" as any,
+        scope: "" as any,
         allDay: true,
         department: "",
         responsiblePerson: "",
+        gradeLevels: [] as GradeValue[],
+        periods: [] as PeriodValue[],
       });
     }
   }, [event, selectedDate, selectedEndDate, reset]);
@@ -176,12 +208,14 @@ export default function EventModal({
         title: values.title,
         description: values.description || undefined,
         startDate: startDateTime,
-        endDate: endDateTime,
+        endDate: endDateTime ?? undefined,
         eventType: values.eventType,
         scope: values.scope,
         allDay,
         department: values.department || undefined,
         responsiblePerson: values.responsiblePerson || undefined,
+        gradeLevels: values.gradeLevels ?? [],
+        periods: values.periods ?? [],
       };
 
       const url = event ? `/api/calendar-events/${event.id}` : "/api/calendar-events";
@@ -286,12 +320,78 @@ export default function EventModal({
           />
 
           <div className="grid grid-cols-2 gap-4">
+            <Input
+              {...register("department")}
+              label="담당 부서"
+              placeholder="예: 교무부, 학생부 등"
+              error={errors.department?.message}
+            />
+            <Input
+              {...register("responsiblePerson")}
+              label="담당자"
+              placeholder="담당자 이름을 입력하세요"
+              error={errors.responsiblePerson?.message}
+            />
+          </div>
+
+          <div className="flex flex-col gap-4 md:flex-row md:gap-6">
+            <div className="w-full md:w-1/3 lg:w-1/4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">학년</label>
+              <div className="flex flex-wrap gap-3">
+                {GRADE_VALUES.map((grade) => (
+                  <label key={grade} className="flex flex-col items-center text-sm text-gray-700">
+                    <span className="mb-1">{grade}학년</span>
+                    <input
+                      type="checkbox"
+                      value={grade}
+                      {...register("gradeLevels")}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </label>
+                ))}
+              </div>
+              {errors.gradeLevels && (
+                <p className="mt-1 text-sm text-red-600" role="alert">
+                  {errors.gradeLevels.message as string}
+                </p>
+              )}
+            </div>
+
+            <div className="w-full md:flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                교시
+              </label>
+              <div className="flex flex-wrap gap-3">
+                {PERIOD_VALUES.map((period) => (
+                  <label key={period} className="flex flex-col items-center text-sm text-gray-700">
+                    <span className="mb-1">{period}교시</span>
+                    <input
+                      type="checkbox"
+                      value={period}
+                      {...register("periods")}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </label>
+                ))}
+              </div>
+              {errors.periods && (
+                <p className="mt-1 text-sm text-red-600" role="alert">
+                  {errors.periods.message as string}
+                </p>
+              )}
+            </div>
+
+            
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <Select
               {...register("eventType")}
               label="일정 유형"
               options={eventTypeOptions}
               error={errors.eventType?.message}
               required
+              placeholder="선택"
             />
             <Select
               {...register("scope")}
@@ -299,6 +399,7 @@ export default function EventModal({
               options={scopeOptions}
               error={errors.scope?.message}
               required
+              placeholder="선택"
             />
           </div>
 
@@ -366,21 +467,6 @@ export default function EventModal({
                 {errors.description.message}
               </p>
             )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              {...register("department")}
-              label="담당 부서 (선택)"
-              placeholder="예: 교무부, 학생부 등"
-              error={errors.department?.message}
-            />
-            <Input
-              {...register("responsiblePerson")}
-              label="담당자 (선택)"
-              placeholder="담당자 이름을 입력하세요"
-              error={errors.responsiblePerson?.message}
-            />
           </div>
 
           <div className="flex items-center justify-between pt-4 border-t border-gray-200">
