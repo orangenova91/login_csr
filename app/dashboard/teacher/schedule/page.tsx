@@ -2,19 +2,8 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { getTranslations } from "@/lib/i18n";
-
-const upcomingEvents = [
-  {
-    title: "2학년 과학 시험",
-    date: "2025-11-14",
-    type: "평가",
-  },
-  {
-    title: "교원 연수",
-    date: "2025-11-20",
-    type: "행사",
-  },
-];
+import { prisma } from "@/lib/prisma";
+import TeacherScheduleClient from "@/components/dashboard/TeacherScheduleClient";
 
 export default async function TeacherSchedulePage() {
   const session = await getServerSession(authOptions);
@@ -29,33 +18,79 @@ export default async function TeacherSchedulePage() {
 
   const t = getTranslations("ko");
 
-  return (
-    <div className="border-4 border-dashed border-gray-200 rounded-lg p-8 bg-white space-y-6">
-      <header>
-        <h1 className="text-2xl font-bold text-gray-900">{t.dashboard.teacherScheduleTitle}</h1>
-        <p className="mt-2 text-sm text-gray-600">
-          개인 일정과 학교 공통 일정을 함께 확인하고 관리할 수 있습니다.
-        </p>
-      </header>
+  // 오늘부터 3개월 전후 일정 가져오기
+  const now = new Date();
+  const startDate = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+  const endDate = new Date(now.getFullYear(), now.getMonth() + 3, 31);
 
-      <section className="rounded-lg border border-gray-100 p-4">
-        <h2 className="text-lg font-semibold text-gray-900">다가오는 일정</h2>
-        <ul className="mt-3 space-y-3 text-sm text-gray-700">
-          {upcomingEvents.length === 0 ? (
-            <li>{t.dashboard.teacherScheduleEmpty}</li>
-          ) : (
-            upcomingEvents.map((event) => (
-              <li key={event.title} className="rounded-lg border border-gray-100 p-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-gray-900">{event.title}</span>
-                  <span className="text-xs text-gray-500">{event.date}</span>
-                </div>
-                <p className="mt-1 text-xs text-gray-500">{event.type}</p>
-              </li>
-            ))
-          )}
-        </ul>
-      </section>
+  const events = await prisma.calendarEvent.findMany({
+    where: {
+      OR: [
+        { scope: "school", school: session.user.school || undefined },
+        { scope: "personal", teacherId: session.user.id },
+      ],
+      startDate: {
+        gte: startDate,
+        lte: endDate,
+      },
+    },
+    orderBy: { startDate: "asc" },
+  }) as Array<{
+    id: string;
+    title: string;
+    description: string | null;
+    startDate: Date;
+    endDate: Date | null;
+    eventType: string;
+    scope: string;
+    school: string | null;
+    courseId: string | null;
+    department: string | null;
+    responsiblePerson: string | null;
+  }>;
+
+  // FullCalendar 형식으로 변환
+  const formattedEvents = events.map((event: {
+    id: string;
+    title: string;
+    description: string | null;
+    startDate: Date;
+    endDate: Date | null;
+    eventType: string;
+    scope: string;
+    school: string | null;
+    courseId: string | null;
+    department: string | null;
+    responsiblePerson: string | null;
+  }) => ({
+    id: event.id,
+    title: event.title,
+    description: event.description || undefined,
+    start: event.startDate.toISOString(),
+    end: event.endDate ? event.endDate.toISOString() : null,
+    allDay: !event.endDate || event.startDate.toDateString() === event.endDate.toDateString(),
+    extendedProps: {
+      eventType: event.eventType,
+      scope: event.scope,
+      school: event.school || undefined,
+      courseId: event.courseId || undefined,
+      department: event.department || undefined,
+      responsiblePerson: event.responsiblePerson || undefined,
+    },
+  }));
+
+  return (
+    <div className="space-y-6">
+      <div className="border-4 border-dashed border-gray-200 rounded-lg p-8 bg-white">
+        <header>
+          <h1 className="text-2xl font-bold text-gray-900">{t.dashboard.teacherScheduleTitle}</h1>
+          <p className="mt-2 text-sm text-gray-600">
+            개인 일정과 학교 공통 일정을 함께 확인하고 관리할 수 있습니다.
+          </p>
+        </header>
+      </div>
+
+      <TeacherScheduleClient initialEvents={formattedEvents} />
     </div>
   );
 }

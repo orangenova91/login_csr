@@ -6,6 +6,7 @@ import { getTranslations } from "@/lib/i18n";
 import SignOutButton from "@/components/dashboard/SignOutButton";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Footer } from "@/components/dashboard/Footer";
+import { AnimatedBackground } from "@/components/ui/AnimatedBackground";
 import {
   Home,
   Calendar,
@@ -133,8 +134,9 @@ export default async function DashboardLayout({
       : [];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <nav className="bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex flex-col relative overflow-hidden">
+      <AnimatedBackground />
+      <nav className="bg-white/80 backdrop-blur-lg shadow-sm fixed top-0 left-0 right-0 z-50 border-b border-white/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
@@ -151,7 +153,7 @@ export default async function DashboardLayout({
       </nav>
 
       <Sidebar items={navItems} />
-      <main className="ml-16 xl:ml-20 pt-20 pb-10 px-4 sm:px-8 lg:px-10 flex-1 transition-all duration-300">
+      <main className="ml-16 xl:ml-20 pt-20 pb-10 px-4 sm:px-8 lg:px-10 flex-1 transition-all duration-300 relative z-10">
         <div className="max-w-7xl mx-auto">
           <section className="w-full">{children}</section>
         </div>
