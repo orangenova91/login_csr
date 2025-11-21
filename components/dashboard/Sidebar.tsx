@@ -30,7 +30,7 @@ export function Sidebar({ items }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-16 h-[calc(100vh-4rem)] bg-gray-100 z-40 border-r border-gray-200 transition-[width] duration-300 ease-out overflow-hidden",
+        "fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white/80 backdrop-blur-lg z-40 border-r border-white/20 transition-[width] duration-300 ease-out overflow-hidden shadow-lg",
         isExpanded ? EXPANDED_WIDTH : COLLAPSED_WIDTH
       )}
       onMouseEnter={() => setIsExpanded(true)}
