@@ -100,6 +100,90 @@ const formatGrade = (grade: string) => {
   }
 };
 
+// 한국 시간대(Asia/Seoul, UTC+9) 기준으로 현재 시간을 가져오는 헬퍼 함수
+const getKoreaTime = (): Date => {
+  const now = new Date();
+  // 한국 시간대의 날짜/시간 부분을 추출
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+  
+  const parts = formatter.formatToParts(now);
+  const year = parseInt(parts.find(p => p.type === "year")?.value || "0");
+  const month = parseInt(parts.find(p => p.type === "month")?.value || "0");
+  const day = parseInt(parts.find(p => p.type === "day")?.value || "0");
+  const hour = parseInt(parts.find(p => p.type === "hour")?.value || "0");
+  const minute = parseInt(parts.find(p => p.type === "minute")?.value || "0");
+  const second = parseInt(parts.find(p => p.type === "second")?.value || "0");
+  
+  // 한국 시간대의 Date 객체 생성 (로컬 시간으로 해석되지만 값은 한국 시간 기준)
+  return new Date(year, month - 1, day, hour, minute, second);
+};
+
+// 한국 시간 기준으로 특정 날짜의 자정(00:00:00)을 가져오는 함수
+const getKoreaMidnight = (date: Date): Date => {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  
+  const parts = formatter.formatToParts(date);
+  const year = parseInt(parts.find(p => p.type === "year")?.value || "0");
+  const month = parseInt(parts.find(p => p.type === "month")?.value || "0");
+  const day = parseInt(parts.find(p => p.type === "day")?.value || "0");
+  
+  return new Date(year, month - 1, day, 0, 0, 0);
+};
+
+// 한국 시간 기준으로 주간 시작(월요일 자정)을 계산하는 함수
+// 한국 시간 기준의 자정을 UTC로 변환하여 반환
+const getKoreaWeekStart = (): Date => {
+  const now = new Date();
+  
+  // 한국 시간대의 현재 날짜 정보 추출
+  const koreaFormatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  
+  const koreaParts = koreaFormatter.formatToParts(now);
+  const koreaYear = parseInt(koreaParts.find(p => p.type === "year")?.value || "0");
+  const koreaMonth = parseInt(koreaParts.find(p => p.type === "month")?.value || "0");
+  const koreaDay = parseInt(koreaParts.find(p => p.type === "day")?.value || "0");
+  
+  // 한국 시간 기준으로 현재 날짜 생성 (로컬 시간으로 해석)
+  const koreaDate = new Date(koreaYear, koreaMonth - 1, koreaDay);
+  const day = koreaDate.getDay(); // 0 (Sun) - 6 (Sat)
+  const offset = (day + 6) % 7; // convert to Monday-start (월요일 기준으로 변환)
+  
+  // 월요일 날짜 계산
+  koreaDate.setDate(koreaDate.getDate() - offset);
+  
+  // 한국 시간 기준 월요일 자정(00:00:00 KST)을 UTC로 변환
+  // 한국 시간(UTC+9)에서 9시간을 빼서 UTC로 변환
+  const year = koreaDate.getFullYear();
+  const month = koreaDate.getMonth() + 1;
+  const dayOfMonth = koreaDate.getDate();
+  
+  // 한국 시간 기준 자정을 UTC로 변환한 Date 객체 생성
+  // ISO 문자열: YYYY-MM-DDTHH:mm:ss+09:00 형식
+  const koreaMidnightISO = `${year}-${String(month).padStart(2, '0')}-${String(dayOfMonth).padStart(2, '0')}T00:00:00+09:00`;
+  
+  // UTC로 변환된 Date 객체 반환
+  return new Date(koreaMidnightISO);
+};
+
 const getDayOfWeek = (date: Date): string => {
   const days = ["일", "월", "화", "수", "목", "금", "토"];
   return days[date.getDay()];
@@ -132,19 +216,17 @@ export default async function TeacherDashboardPage() {
   }
 
   const teacherId = session.user.id;
-  const today = new Date();
+  // 한국 시간대 기준으로 현재 시간 및 날짜 계산
+  const now = getKoreaTime();
+  const today = getKoreaTime();
   const todayDay = getDayOfWeek(today);
 
-  const now = new Date();
-  const weekStart = new Date(now);
-  const day = weekStart.getDay(); // 0 (Sun) - 6 (Sat)
-  const offset = (day + 6) % 7; // convert to Monday-start
-  weekStart.setDate(weekStart.getDate() - offset);
-  weekStart.setHours(0, 0, 0, 0);
+  // 한국 시간 기준으로 주간 시작(월요일 자정) 계산
+  const weekStart = getKoreaWeekStart();
 
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 7);
-  weekEnd.setHours(0, 0, 0, 0);
+  // 한국 시간 기준으로 주간 종료(다음 주 월요일 자정) 계산
+  // weekStart는 이미 한국 시간 기준의 UTC 변환된 값이므로, 7일을 더하면 다음 주 월요일이 됨
+  const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
 
   const weeklyCalendarEvents = await prisma.calendarEvent.findMany({
     where: {
@@ -194,17 +276,25 @@ export default async function TeacherDashboardPage() {
   );
 
   const dayFormatter = new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
     month: "numeric",
     day: "numeric",
     weekday: "short",
   });
 
   const timeFormatter = new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
     hour: "2-digit",
     minute: "2-digit",
   });
 
-  const isoToday = today.toISOString().split("T")[0];
+  // 한국 시간 기준으로 오늘 날짜를 ISO 형식(YYYY-MM-DD)으로 변환
+  const isoToday = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(today);
 
   const weeklySchedule = Array.from({ length: 7 }, (_, index) => {
     const date = new Date(weekStart);
@@ -235,7 +325,12 @@ export default async function TeacherDashboardPage() {
 
     return {
       dateLabel: dayFormatter.format(date),
-      isoDate: date.toISOString().split("T")[0],
+      isoDate: new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Seoul",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(date),
       events: eventsForDay,
     };
   });
@@ -249,12 +344,19 @@ export default async function TeacherDashboardPage() {
 
         <div className="mt-6 bg-blue-50 border border-blue-100 rounded-lg p-4 text-sm text-blue-800">
         오늘은{" "}
+        <span className="inline-block mx-1 px-2 py-1 text-xl font-bold text-blue-900 bg-blue-200 rounded-md">
           {new Intl.DateTimeFormat("ko-KR", {
+            timeZone: "Asia/Seoul",
             month: "2-digit",
             day: "2-digit",
             weekday: "long",
           }).format(now)}{" "}
-          입니다. 오늘 선생님의 수업은 {todaysGroupCount}개 입니다.
+          </span>
+          입니다. 오늘 선생님의 수업은{" "}
+          <span className="inline-block mx-1 px-2 py-1 text-xl font-bold text-blue-900 bg-blue-200 rounded-md">
+            {todaysGroupCount}개
+          </span>{" "}
+          입니다.
         </div>
       </header>
             
