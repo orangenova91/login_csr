@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useEffect } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -35,12 +35,30 @@ interface AnnouncementComposerPayload {
 interface AnnouncementComposerProps {
   authorName: string;
   onPreview?: (payload: AnnouncementComposerPayload) => void;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  showButton?: boolean;
+  editId?: string; // 수정 모드일 때 공지사항 ID
+  onEditComplete?: () => void; // 수정 완료 후 콜백
 }
 
-export function AnnouncementComposer({ authorName, onPreview }: AnnouncementComposerProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export function AnnouncementComposer({ authorName, onPreview, isOpen: controlledIsOpen, onOpenChange, showButton = true, editId, onEditComplete }: AnnouncementComposerProps) {
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  
+  // 외부에서 제어하는 경우와 내부에서 제어하는 경우 모두 지원
+  const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
+  const setIsOpen = (open: boolean) => {
+    if (onOpenChange) {
+      onOpenChange(open);
+    } else {
+      setInternalIsOpen(open);
+    }
+  };
 
   if (!isOpen) {
+    if (!showButton) {
+      return null;
+    }
     return (
       <Button onClick={() => setIsOpen(true)}>
         글쓰기
@@ -48,20 +66,23 @@ export function AnnouncementComposer({ authorName, onPreview }: AnnouncementComp
     );
   }
 
-  return <AnnouncementComposerForm authorName={authorName} onPreview={onPreview} onClose={() => setIsOpen(false)} />;
+  return <AnnouncementComposerForm authorName={authorName} onPreview={onPreview} onClose={() => setIsOpen(false)} editId={editId} onEditComplete={onEditComplete} />;
 }
 
 function AnnouncementComposerForm({
   authorName,
   onPreview,
   onClose,
-}: AnnouncementComposerProps & { onClose: () => void }) {
+  editId,
+  onEditComplete,
+}: AnnouncementComposerProps & { onClose: () => void; editId?: string; onEditComplete?: () => void }) {
   const [title, setTitle] = useState("");
   const [audience, setAudience] = useState("");
   const [useSchedule, setUseSchedule] = useState(false);
   const [publishAt, setPublishAt] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(!!editId);
 
   const editor = useEditor({
     extensions: [
@@ -87,6 +108,37 @@ function AnnouncementComposerForm({
     content: "",
     immediatelyRender: false,
   });
+
+  // 수정 모드일 때 기존 데이터 로드
+  useEffect(() => {
+    if (editId && editor) {
+      const loadAnnouncement = async () => {
+        try {
+          setIsLoading(true);
+          const response = await fetch(`/api/announcements/${editId}`);
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || "공지사항을 불러오는데 실패했습니다.");
+          }
+
+          const announcement = data.announcement;
+          setTitle(announcement.title);
+          setAudience(announcement.audience);
+          setUseSchedule(announcement.isScheduled);
+          setPublishAt(announcement.publishAt ? new Date(announcement.publishAt).toISOString().slice(0, 16) : "");
+          editor.commands.setContent(announcement.content);
+        } catch (err: any) {
+          console.error("Failed to load announcement:", err);
+          setError(err.message || "공지사항을 불러오는 중 오류가 발생했습니다.");
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      loadAnnouncement();
+    }
+  }, [editId, editor]);
 
   // 제목이 비어있거나 알림 대상이 없거나 제출 중일 때 비활성화
   const hasTitle = title.trim().length > 0;
@@ -126,8 +178,11 @@ function AnnouncementComposerForm({
           : undefined,
       };
 
-      const response = await fetch("/api/announcements", {
-        method: "POST",
+      const url = editId ? `/api/announcements/${editId}` : "/api/announcements";
+      const method = editId ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
         },
@@ -137,11 +192,12 @@ function AnnouncementComposerForm({
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "공지사항 생성에 실패했습니다.");
+        throw new Error(data.error || (editId ? "공지사항 수정에 실패했습니다." : "공지사항 생성에 실패했습니다."));
       }
 
       // 성공 시 콜백 호출
       onPreview?.(payload);
+      onEditComplete?.();
 
       // 폼 초기화
       editor.commands.clearContent(true);
@@ -153,8 +209,8 @@ function AnnouncementComposerForm({
       // 폼 닫기
       onClose();
     } catch (err: any) {
-      console.error("Create announcement error:", err);
-      setError(err.message || "공지사항 생성 중 오류가 발생했습니다.");
+      console.error(editId ? "Update announcement error:" : "Create announcement error:", err);
+      setError(err.message || (editId ? "공지사항 수정 중 오류가 발생했습니다." : "공지사항 생성 중 오류가 발생했습니다."));
       setIsSubmitting(false);
     }
   };
@@ -225,12 +281,24 @@ function AnnouncementComposerForm({
       },
     ];
 
+  if (isLoading) {
+    return (
+      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="flex items-center justify-center py-8">
+          <div className="text-sm text-gray-500">공지사항을 불러오는 중...</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-5 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
-          <p className="text-xs font-semibold uppercase tracking-wider text-blue-600">새 공지 작성</p>
-          <h2 className="text-xl font-bold text-gray-900">공지 입력</h2>
+          <p className="text-xs font-semibold uppercase tracking-wider text-blue-600">
+            {editId ? "공지 수정" : "새 공지 작성"}
+          </p>
+          <h2 className="text-xl font-bold text-gray-900">{editId ? "공지 수정" : "공지 입력"}</h2>
           <p className="text-sm text-gray-500">제목과 대상을 지정한 뒤 본문을 자유롭게 작성할 수 있어요.</p>
         </div>
         <Button type="button" variant="ghost" onClick={onClose}>
@@ -323,7 +391,9 @@ function AnnouncementComposerForm({
         </Button>
         <Button type="submit" disabled={isDisabled} isLoading={isSubmitting}>
           <Send className="mr-2 h-4 w-4" />
-          {isSubmitting ? "저장 중..." : "저장하기"}
+          {isSubmitting 
+            ? (editId ? "수정 중..." : "저장 중...") 
+            : (editId ? "수정하기" : "저장하기")}
         </Button>
       </div>
     </form>

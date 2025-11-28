@@ -117,8 +117,14 @@ export async function GET(request: NextRequest) {
       where.publishedAt = { not: null };
     }
 
+    // 학교 필터 (같은 학교의 공지사항만)
+    if (session.user.school) {
+      where.school = session.user.school;
+    }
+
     // 대상 필터
     if (audience) {
+      // 특정 대상으로 필터링하는 경우
       where.OR = [
         { audience: "all" }, // 전체 대상은 항상 포함
         { audience },
@@ -133,27 +139,31 @@ export async function GET(request: NextRequest) {
           // { audience: `grade-${studentGrade}` }, // 실제 구현 시 추가
         ];
       } else if (session.user.role === "teacher") {
-        // 교사는 모든 공지사항 조회 가능
-        where.OR = [
-          { audience: "all" },
-          { audience: "teachers" },
-        ];
+        // 교사는 모든 공지사항 조회 가능 (필터 없음)
+        // where.OR 조건을 추가하지 않음
       }
-    }
-
-    // 학교 필터 (같은 학교의 공지사항만)
-    if (session.user.school) {
-      where.school = session.user.school;
     }
 
     const announcements = await (prisma as any).announcement.findMany({
       where,
       orderBy: [
-        { publishedAt: "desc" },
-        { publishAt: "desc" },
         { createdAt: "desc" },
       ],
       take: 50, // 최대 50개
+    });
+
+    // 클라이언트 측에서 정렬: publishedAt 우선, 없으면 publishAt, 없으면 createdAt
+    announcements.sort((a: any, b: any) => {
+      const aDate = a.publishedAt || a.publishAt || a.createdAt;
+      const bDate = b.publishedAt || b.publishAt || b.createdAt;
+      return new Date(bDate).getTime() - new Date(aDate).getTime();
+    });
+
+    console.log(`Found ${announcements.length} announcements for user ${session.user.role}`, {
+      includeScheduled,
+      audience,
+      school: session.user.school,
+      where,
     });
 
     return NextResponse.json({
