@@ -57,9 +57,9 @@ function AnnouncementComposerForm({
   onClose,
 }: AnnouncementComposerProps & { onClose: () => void }) {
   const [title, setTitle] = useState("");
-  const [audience, setAudience] = useState(audienceOptions[0].value);
+  const [audience, setAudience] = useState("");
   const [useSchedule, setUseSchedule] = useState(false);
-  const [publishAt, setPublishAt] = useState(() => getDefaultPublishAt());
+  const [publishAt, setPublishAt] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -88,15 +88,12 @@ function AnnouncementComposerForm({
     immediatelyRender: false,
   });
 
-  const isDisabled =
-    !editor ||
-    !title.trim() ||
-    !authorName.trim() ||
-    editor.getText().trim().length === 0 ||
-    (useSchedule && !publishAt) ||
-    isSubmitting;
+  // 제목이 비어있거나 알림 대상이 없거나 제출 중일 때 비활성화
+  const hasTitle = title.trim().length > 0;
+  const hasAudience = Boolean(audience) && String(audience).trim().length > 0;
+  const isDisabled = !hasTitle || !hasAudience || isSubmitting;
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!editor) return;
 
@@ -119,16 +116,47 @@ function AnnouncementComposerForm({
       isScheduled: useSchedule,
       publishAt: useSchedule ? publishAt : undefined,
     };
-    console.log("Announcement draft:", payload);
-    onPreview?.(payload);
 
-    setTimeout(() => {
+    try {
+      // publishAt을 ISO 형식으로 변환 (datetime-local 형식에서)
+      const requestBody = {
+        ...payload,
+        publishAt: payload.publishAt
+          ? new Date(payload.publishAt).toISOString()
+          : undefined,
+      };
+
+      const response = await fetch("/api/announcements", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "공지사항 생성에 실패했습니다.");
+      }
+
+      // 성공 시 콜백 호출
+      onPreview?.(payload);
+
+      // 폼 초기화
       editor.commands.clearContent(true);
       setTitle("");
       setUseSchedule(false);
-      setPublishAt(getDefaultPublishAt());
+      setPublishAt("");
       setIsSubmitting(false);
-    }, 500);
+
+      // 폼 닫기
+      onClose();
+    } catch (err: any) {
+      console.error("Create announcement error:", err);
+      setError(err.message || "공지사항 생성 중 오류가 발생했습니다.");
+      setIsSubmitting(false);
+    }
   };
 
   const toolbarItems =
@@ -225,6 +253,7 @@ function AnnouncementComposerForm({
             value={audience}
             onChange={(event) => setAudience(event.target.value)}
             options={audienceOptions}
+            placeholder="알림 대상을 선택하세요"
           />
           <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
             <div className="flex items-center justify-between gap-2">
@@ -237,7 +266,16 @@ function AnnouncementComposerForm({
                   type="checkbox"
                   className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   checked={useSchedule}
-                  onChange={(event) => setUseSchedule(event.target.checked)}
+                  onChange={(event) => {
+                    const checked = event.target.checked;
+                    setUseSchedule(checked);
+                    // 예약 발행을 체크하면 기본값 설정, 해제하면 빈 문자열
+                    if (checked && !publishAt) {
+                      setPublishAt(getDefaultPublishAt());
+                    } else if (!checked) {
+                      setPublishAt("");
+                    }
+                  }}
                 />
                 사용
               </label>
@@ -279,10 +317,15 @@ function AnnouncementComposerForm({
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      <Button type="submit" disabled={isDisabled} isLoading={isSubmitting} className="w-full sm:w-auto">
-        <Send className="mr-2 h-4 w-4" />
-        임시 저장
-      </Button>
+      <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+        <Button type="button" variant="outline" onClick={onClose}>
+          취소
+        </Button>
+        <Button type="submit" disabled={isDisabled} isLoading={isSubmitting}>
+          <Send className="mr-2 h-4 w-4" />
+          {isSubmitting ? "저장 중..." : "저장하기"}
+        </Button>
+      </div>
     </form>
   );
 }
