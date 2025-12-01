@@ -12,7 +12,7 @@ const createEventSchema = z.object({
   description: z.string().trim().max(1000, "설명은 1000자 이하여야 합니다").optional(),
   startDate: z.string().datetime(),
   endDate: z.string().datetime().optional(),
-  eventType: z.enum(["평가", "행사", "휴업일", "개인일정", "기타"]),
+  eventType: z.enum(["자율*자치", "동아리", "진로", "봉사"]),
   scope: z.enum(["school", "personal", "class"]),
   school: z.string().trim().optional(),
   courseId: z.string().optional(),

@@ -164,11 +164,10 @@ const CalendarView = forwardRef<CalendarViewHandle, CalendarViewProps>(
   const calendarEvents: EventInput[] = events.map((event) => {
     // 일정 유형별 색상
     const colors: Record<string, string> = {
-      평가: "#dc2626", // red
-      행사: "#2563eb", // blue
-      휴업일: "#16a34a", // green
-      개인일정: "#ca8a04", // yellow
-      기타: "#6b7280", // gray
+      "자율*자치": "#dc2626", // red
+      "동아리": "#2563eb", // blue
+      "진로": "#16a34a", // green
+      "봉사": "#ca8a04", // yellow
     };
 
     return {
@@ -177,8 +176,8 @@ const CalendarView = forwardRef<CalendarViewHandle, CalendarViewProps>(
       start: event.start,
       end: event.end || undefined,
       allDay: event.allDay,
-      backgroundColor: colors[event.extendedProps.eventType] || colors["기타"],
-      borderColor: colors[event.extendedProps.eventType] || colors["기타"],
+      backgroundColor: colors[event.extendedProps.eventType] || colors["봉사"],
+      borderColor: colors[event.extendedProps.eventType] || colors["봉사"],
       extendedProps: event.extendedProps,
       description: event.description,
     };

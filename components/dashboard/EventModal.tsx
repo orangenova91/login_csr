@@ -21,7 +21,7 @@ const eventFormSchema = z.object({
   startTime: z.string().optional(),
   endDate: z.string().optional(),
   endTime: z.string().optional(),
-  eventType: z.enum(["평가", "행사", "휴업일", "개인일정", "기타"], {
+  eventType: z.enum(["자율*자치", "동아리", "진로", "봉사"], {
     required_error: "일정 유형을 선택하세요",
   }),
   scope: z.enum(["school", "personal"], {
@@ -272,11 +272,10 @@ export default function EventModal({
   if (!isOpen) return null;
 
   const eventTypeOptions = [
-    { value: "평가", label: "평가" },
-    { value: "행사", label: "행사" },
-    { value: "휴업일", label: "휴업일" },
-    { value: "개인일정", label: "개인일정" },
-    { value: "기타", label: "기타" },
+    { value: "자율*자치", label: "자율*자치" },
+    { value: "동아리", label: "동아리" },
+    { value: "진로", label: "진로" },
+    { value: "봉사", label: "봉사" },
   ];
 
   const scopeOptions = [
@@ -459,7 +458,7 @@ export default function EventModal({
             <textarea
               {...register("description")}
               rows={3}
-              className="flex w-full rounded-md border border-gray-300 px-3 py-2 text-sm ring-offset-white placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              className="flex w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 ring-offset-white placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
               placeholder="일정에 대한 설명을 입력하세요"
             />
             {errors.description && (

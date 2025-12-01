@@ -12,7 +12,7 @@ const updateEventSchema = z.object({
   description: z.string().trim().max(1000, "설명은 1000자 이하여야 합니다").optional(),
   startDate: z.string().datetime().optional(),
   endDate: z.string().datetime().optional().nullable(),
-  eventType: z.enum(["평가", "행사", "휴업일", "개인일정", "기타"]).optional(),
+  eventType: z.enum(["자율*자치", "동아리", "진로", "봉사"]).optional(),
   department: z.string().trim().max(100, "담당 부서는 100자 이하여야 합니다").optional(),
   responsiblePerson: z.string().trim().max(100, "담당자는 100자 이하여야 합니다").optional(),
   gradeLevels: z.array(z.enum(GRADE_VALUES)).optional(),
