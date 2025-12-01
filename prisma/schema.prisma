@@ -13,7 +13,7 @@ datasource db {
 model User {
   id             String    @id @default(auto()) @map("_id") @db.ObjectId
   email          String    @unique
-  hashedPassword String
+  hashedPassword String? // OAuth 사용자는 비밀번호가 없을 수 있음
   name           String?
   school         String?
   role           String? // "student" 또는 "teacher"

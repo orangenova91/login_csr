@@ -8,13 +8,14 @@ Next.js 14 (App Router) + TypeScript + NextAuth + Prisma + MongoDB를 사용한 
 - **Language**: TypeScript
 - **UI**: Tailwind CSS
 - **폼 관리**: react-hook-form + zod
-- **인증**: NextAuth.js (Auth.js) + Credentials Provider
+- **인증**: NextAuth.js (Auth.js) + Credentials Provider + Google OAuth
 - **데이터베이스**: Prisma + MongoDB
 - **보안**: bcryptjs, Rate limiting, CSRF 방어 (NextAuth 기본 제공)
 
 ## 기능
 
 - ✅ 로그인 (Email + Password)
+- ✅ Google OAuth 로그인
 - ✅ 회원가입 (이메일 중복 검사, 비밀번호 정책)
 - ✅ 로그아웃
 - ✅ 보호된 라우트 (대시보드)
@@ -46,6 +47,10 @@ DATABASE_URL="mongodb://localhost:27017/schoolhub"
 # NextAuth
 NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="your-secret-key-here" # openssl rand -base64 32 로 생성 가능
+
+# Google OAuth (옵션)
+GOOGLE_CLIENT_ID="your-google-client-id"
+GOOGLE_CLIENT_SECRET="your-google-client-secret"
 
 # 이메일 인증 (옵션)
 ENABLE_EMAIL_VERIFICATION="false" # true로 설정하면 이메일 인증 활성화
@@ -193,6 +198,35 @@ schoolhub/
 
 프로덕션에서는 실제 이메일 서비스를 연동해야 합니다.
 
+## Google OAuth 로그인 설정
+
+### 1. Google Cloud Console에서 OAuth 2.0 클라이언트 ID 생성
+
+1. [Google Cloud Console](https://console.cloud.google.com/)에 접속
+2. 프로젝트 선택 또는 새 프로젝트 생성
+3. **API 및 서비스** > **사용자 인증 정보**로 이동
+4. **사용자 인증 정보 만들기** > **OAuth 클라이언트 ID** 선택
+5. 애플리케이션 유형: **웹 애플리케이션** 선택
+6. 승인된 리디렉션 URI 추가:
+   - 개발 환경: `http://localhost:3000/api/auth/callback/google`
+   - 프로덕션: `https://yourdomain.com/api/auth/callback/google`
+7. 클라이언트 ID와 클라이언트 보안 비밀번호 복사
+
+### 2. 환경 변수 설정
+
+`.env.local` 파일에 다음 변수를 추가하세요:
+
+```env
+GOOGLE_CLIENT_ID="your-google-client-id.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET="your-google-client-secret"
+```
+
+### 3. 동작 방식
+
+- **기존 사용자**: 같은 이메일로 가입한 사용자가 Google로 로그인하면 기존 계정에 Google 계정이 연결됩니다.
+- **신규 사용자**: Google로 처음 로그인하면 자동으로 계정이 생성됩니다 (이메일 인증 자동 완료).
+- **역할 설정**: Google로 가입한 사용자는 기본적으로 `role`이 설정되지 않습니다. 필요시 관리자가 수동으로 설정하거나 추가 정보 입력 페이지를 구현할 수 있습니다.
+
 ## 다국어 지원
 
 현재 지원 언어:
@@ -223,6 +257,8 @@ schoolhub/
 DATABASE_URL="mongodb+srv://username:password@cluster.mongodb.net/schoolhub?retryWrites=true&w=majority"
 NEXTAUTH_URL="https://yourdomain.com"
 NEXTAUTH_SECRET="your-production-secret"
+GOOGLE_CLIENT_ID="your-google-client-id.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET="your-google-client-secret"
 ENABLE_EMAIL_VERIFICATION="true"
 ```
 
