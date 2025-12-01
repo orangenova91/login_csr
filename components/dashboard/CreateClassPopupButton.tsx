@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 
 import CreateClassForm from "@/components/dashboard/CreateClassForm";
@@ -15,6 +16,11 @@ export default function CreateClassPopupButton({
 }: CreateClassModalButtonProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleOpen = useCallback(() => setIsOpen(true), []);
   const handleClose = useCallback(() => setIsOpen(false), []);
@@ -22,39 +28,54 @@ export default function CreateClassPopupButton({
     router.refresh();
   }, [router]);
 
+  const handleBackdropClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      handleClose();
+    }
+  }, [handleClose]);
+
+  const modalContent = isOpen ? (
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 px-4 py-8 sm:py-8"
+      role="dialog"
+      aria-modal="true"
+      onClick={handleBackdropClick}
+    >
+      <div 
+        className="relative w-full max-w-2xl max-h-[92vh] rounded-xl bg-white shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 flex-shrink-0">
+          <h2 className="text-lg font-semibold text-gray-900">수업 생성</h2>
+          <button
+            type="button"
+            onClick={handleClose}
+            className="text-sm text-gray-500 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded-md px-2 py-1"
+          >
+            닫기
+          </button>
+        </div>
+
+        <div className="px-6 py-6 overflow-y-auto flex-1 min-h-0">
+          <CreateClassForm
+            instructorName={instructorName}
+            onSuccess={handleClose}
+            onCreated={handleCreated}
+          />
+        </div>
+      </div>
+    </div>
+  ) : null;
+
   return (
     <>
       <Button variant="primary" type="button" onClick={handleOpen}>
-      수업 생성
-    </Button>
+        수업 생성
+      </Button>
 
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="relative w-full max-w-2xl rounded-xl bg-white shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
-            <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-              <h2 className="text-lg font-semibold text-gray-900">수업 생성</h2>
-              <button
-                type="button"
-                onClick={handleClose}
-                className="text-sm text-gray-500 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded-md px-2 py-1"
-              >
-                닫기
-              </button>
-            </div>
-
-            <div className="px-6 py-6">
-              <CreateClassForm
-                instructorName={instructorName}
-                onSuccess={handleClose}
-                onCreated={handleCreated}
-              />
-            </div>
-          </div>
-        </div>
+      {mounted && typeof window !== "undefined" && createPortal(
+        modalContent,
+        document.body
       )}
     </>
   );
