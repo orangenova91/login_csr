@@ -16,6 +16,7 @@ model User {
   hashedPassword String? // OAuth 사용자는 비밀번호가 없을 수 있음
   name           String?
   school         String?
+  region         String? // 지역 정보
   role           String? // "student", "teacher", "admin", 또는 "superadmin"
   emailVerified  DateTime?
   createdAt      DateTime  @default(now())
@@ -248,13 +249,14 @@ model CalendarEvent {
   description      String?
   startDate        DateTime
   endDate          DateTime?
-  eventType        String   // "평가", "행사", "휴업일", "개인일정", "기타"
+  eventType        String?  // "평가", "행사", "휴업일", "개인일정", "기타"
   scope            String   // "school" | "personal" | "class"
   school           String?  // scope가 "school"일 때 학교 필터링
   teacherId        String?  @db.ObjectId // 개인일정일 때
   courseId         String?  @db.ObjectId // 수업별 일정일 때
   department        String?   // 담당 부서
   responsiblePerson String?   // 담당자
+  scheduleArea      String?   // 일정 구분: "창의적 체험활동", "교과"
   gradeLevels       String[] @default([])
   periods           String[]  @default([])
   createdBy        String   @db.ObjectId // 생성한 사용자 ID

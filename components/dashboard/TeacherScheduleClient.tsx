@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, useCallback, useRef } from "react";
+import { useMemo, useState, useCallback, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import CalendarView, { CalendarEvent, CalendarViewHandle } from "./CalendarView";
 
 type TeacherScheduleClientProps = {
@@ -12,7 +13,29 @@ type CalendarEventWithDate = CalendarEvent & { startDate: Date };
 export default function TeacherScheduleClient({ initialEvents }: TeacherScheduleClientProps) {
   const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
   const calendarRef = useRef<CalendarViewHandle>(null);
+  const router = useRouter();
   const today = new Date();
+
+  // initialEvents가 변경될 때 events 상태 업데이트
+  useEffect(() => {
+    setEvents(initialEvents);
+  }, [initialEvents]);
+
+  // 탭이 다시 활성화될 때 이벤트 새로고침
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        // 탭이 다시 활성화되면 서버 컴포넌트를 다시 실행하여 최신 데이터 가져오기
+        router.refresh();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [router]);
 
   const handleEventsChange = useCallback((updatedEvents: CalendarEvent[]) => {
     setEvents(updatedEvents);

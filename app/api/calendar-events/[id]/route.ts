@@ -15,6 +15,7 @@ const updateEventSchema = z.object({
   eventType: z.enum(["자율*자치", "동아리", "진로", "봉사"]).optional(),
   department: z.string().trim().max(100, "담당 부서는 100자 이하여야 합니다").optional(),
   responsiblePerson: z.string().trim().max(100, "담당자는 100자 이하여야 합니다").optional(),
+  scheduleArea: z.enum(["창의적 체험활동", "교과"]).optional(),
   gradeLevels: z.array(z.enum(GRADE_VALUES)).optional(),
   periods: z.array(z.enum(PERIOD_VALUES)).optional(),
 });
@@ -62,9 +63,10 @@ export async function PATCH(
     if (validatedData.endDate !== undefined) {
       updateData.endDate = validatedData.endDate ? new Date(validatedData.endDate) : null;
     }
-    if (validatedData.eventType !== undefined) updateData.eventType = validatedData.eventType;
+    if (validatedData.eventType !== undefined) updateData.eventType = validatedData.eventType || null;
     if (validatedData.department !== undefined) updateData.department = validatedData.department || null;
     if (validatedData.responsiblePerson !== undefined) updateData.responsiblePerson = validatedData.responsiblePerson || null;
+    if (validatedData.scheduleArea !== undefined) updateData.scheduleArea = validatedData.scheduleArea || null;
     if (validatedData.gradeLevels !== undefined) updateData.gradeLevels = validatedData.gradeLevels ?? [];
     if (validatedData.periods !== undefined) updateData.periods = validatedData.periods ?? [];
 

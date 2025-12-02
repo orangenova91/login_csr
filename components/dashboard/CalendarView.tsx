@@ -183,6 +183,15 @@ const CalendarView = forwardRef<CalendarViewHandle, CalendarViewProps>(
     };
   });
 
+  // initialEvents가 변경될 때 events 상태 업데이트
+  useEffect(() => {
+    setEvents(initialEvents);
+    // FullCalendar에 이벤트 업데이트 알림
+    if (calendarRef) {
+      calendarRef.getApi().refetchEvents();
+    }
+  }, [initialEvents]);
+
   useEffect(() => {
     onEventsChange?.(events);
   }, [events, onEventsChange]);

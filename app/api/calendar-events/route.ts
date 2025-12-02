@@ -12,12 +12,13 @@ const createEventSchema = z.object({
   description: z.string().trim().max(1000, "설명은 1000자 이하여야 합니다").optional(),
   startDate: z.string().datetime(),
   endDate: z.string().datetime().optional(),
-  eventType: z.enum(["자율*자치", "동아리", "진로", "봉사"]),
+  eventType: z.enum(["자율*자치", "동아리", "진로", "봉사"]).optional(),
   scope: z.enum(["school", "personal", "class"]),
   school: z.string().trim().optional(),
   courseId: z.string().optional(),
   department: z.string().trim().max(100, "담당 부서는 100자 이하여야 합니다").optional(),
   responsiblePerson: z.string().trim().max(100, "담당자는 100자 이하여야 합니다").optional(),
+  scheduleArea: z.enum(["창의적 체험활동", "교과"]).optional(),
   gradeLevels: z.array(z.enum(GRADE_VALUES)).optional(),
   periods: z.array(z.enum(PERIOD_VALUES)).optional(),
 });
@@ -60,11 +61,18 @@ export async function GET(request: NextRequest) {
       where.scope = "personal";
       where.teacherId = session.user.id;
     } else {
-      // 모두 조회: 학교 일정 + 개인 일정
-      where.OR = [
-        { scope: "school", school: session.user.school || undefined },
-        { scope: "personal", teacherId: session.user.id },
-      ];
+      // 모두 조회: 학교 일정 + 개인 일정 (교사인 경우에만)
+      if (session.user.role === "teacher") {
+        where.OR = [
+          { scope: "school", school: session.user.school || undefined },
+          { scope: "personal", teacherId: session.user.id },
+        ];
+      } else {
+        // 학생, 관리자 등은 학교 일정만 조회
+        where.OR = [
+          { scope: "school", school: session.user.school || undefined },
+        ];
+      }
     }
 
     const events = await prisma.calendarEvent.findMany({
@@ -82,6 +90,7 @@ export async function GET(request: NextRequest) {
       courseId: string | null;
       department: string | null;
       responsiblePerson: string | null;
+      scheduleArea: string | null;
       gradeLevels: string[];
       periods: string[];
     }>;
@@ -101,6 +110,7 @@ export async function GET(request: NextRequest) {
         courseId: event.courseId,
         department: event.department,
         responsiblePerson: event.responsiblePerson,
+        scheduleArea: event.scheduleArea,
         gradeLevels: event.gradeLevels || [],
         periods: event.periods || [],
       },
@@ -151,13 +161,14 @@ export async function POST(request: NextRequest) {
         description: validatedData.description,
         startDate: new Date(validatedData.startDate),
         endDate: validatedData.endDate ? new Date(validatedData.endDate) : null,
-        eventType: validatedData.eventType,
+        eventType: validatedData.eventType || null,
         scope: validatedData.scope,
         school: validatedData.school,
         teacherId: validatedData.teacherId || session.user.id,
         courseId: validatedData.courseId || null,
         department: validatedData.department || null,
         responsiblePerson: validatedData.responsiblePerson || null,
+        scheduleArea: validatedData.scheduleArea || null,
         gradeLevels: validatedData.gradeLevels ?? [],
         periods: validatedData.periods ?? [],
         createdBy: session.user.id,

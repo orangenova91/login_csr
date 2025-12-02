@@ -20,6 +20,7 @@ import {
   Bell,
   HelpCircle,
   Shield,
+  User,
 } from "lucide-react";
 
 export default async function DashboardLayout({
@@ -96,6 +97,11 @@ export default async function DashboardLayout({
             href: "/dashboard/student/support",
             label: t.sidebar.student.support,
             icon: <HelpCircle className="w-5 h-5" />
+          },
+          {
+            href: "/dashboard/student/profile",
+            label: "프로필 수정",
+            icon: <User className="w-5 h-5" />
           },
         ]
       : role === "admin"

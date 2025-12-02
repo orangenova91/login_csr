@@ -26,7 +26,12 @@ export default async function TeacherSchedulePage() {
   const events = await prisma.calendarEvent.findMany({
     where: {
       OR: [
-        { scope: "school", school: session.user.school || undefined },
+        // 같은 학교의 모든 학교 일정
+        { 
+          scope: "school", 
+          school: session.user.school || undefined,
+        },
+        // 개인 일정 (교사 본인만)
         { scope: "personal", teacherId: session.user.id },
       ],
       startDate: {

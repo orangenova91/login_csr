@@ -21,17 +21,28 @@ const eventFormSchema = z.object({
   startTime: z.string().optional(),
   endDate: z.string().optional(),
   endTime: z.string().optional(),
-  eventType: z.enum(["자율*자치", "동아리", "진로", "봉사"], {
-    required_error: "일정 유형을 선택하세요",
-  }),
-  scope: z.enum(["school", "personal"], {
-    required_error: "범위를 선택하세요",
-  }),
+  eventType: z.preprocess(
+    (val) => val === "" ? undefined : val,
+    z.enum(["자율*자치", "동아리", "진로", "봉사"]).optional()
+  ),
+  scope: z.enum(["school", "personal"]).default("school"),
   allDay: z.boolean().default(true),
   department: z.string().trim().max(100, "담당 부서는 100자 이하여야 합니다").optional(),
   responsiblePerson: z.string().trim().max(100, "담당자는 100자 이하여야 합니다").optional(),
+  scheduleArea: z.enum(["창의적 체험활동", "교과"], {
+    required_error: "일정 영역을 선택하세요",
+  }).optional(),
   gradeLevels: z.array(z.enum(GRADE_VALUES)).optional(),
   periods: z.array(z.enum(PERIOD_VALUES)).optional(),
+}).superRefine((data, ctx) => {
+  // 일정 구분이 '교과'가 아닐 때만 일정 유형을 필수로 검증
+  if (data.scheduleArea !== "교과" && !data.eventType) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "일정 유형을 선택하세요",
+      path: ["eventType"],
+    });
+  }
 });
 
 type EventFormValues = z.infer<typeof eventFormSchema>;
@@ -50,6 +61,7 @@ interface CalendarEvent {
     courseId?: string;
     department?: string;
     responsiblePerson?: string;
+    scheduleArea?: string;
     gradeLevels?: string[];
     periods?: string[];
   };
@@ -95,10 +107,11 @@ export default function EventModal({
       endDate: "",
       endTime: "",
       eventType: "" as any,
-      scope: "" as any,
+      scope: "school" as any,
       allDay: true,
       department: "",
       responsiblePerson: "",
+      scheduleArea: "" as any,
       gradeLevels: [] as GradeValue[],
       periods: [] as PeriodValue[],
     },
@@ -146,6 +159,7 @@ export default function EventModal({
         allDay: event.allDay,
         department: event.extendedProps.department || "",
         responsiblePerson: event.extendedProps.responsiblePerson || "",
+        scheduleArea: event.extendedProps.scheduleArea as any,
         gradeLevels: (event.extendedProps.gradeLevels || []) as GradeValue[],
         periods: (event.extendedProps.periods || []) as PeriodValue[],
       });
@@ -170,10 +184,11 @@ export default function EventModal({
         endDate: endDateStr,
         endTime: "",
         eventType: "" as any,
-        scope: "" as any,
+        scope: "school" as any,
         allDay: true,
         department: "",
         responsiblePerson: "",
+        scheduleArea: "" as any,
         gradeLevels: [] as GradeValue[],
         periods: [] as PeriodValue[],
       });
@@ -209,11 +224,12 @@ export default function EventModal({
         description: values.description || undefined,
         startDate: startDateTime,
         endDate: endDateTime ?? undefined,
-        eventType: values.eventType,
+        eventType: values.eventType || undefined,
         scope: values.scope,
         allDay,
         department: values.department || undefined,
         responsiblePerson: values.responsiblePerson || undefined,
+        scheduleArea: values.scheduleArea || undefined,
         gradeLevels: values.gradeLevels ?? [],
         periods: values.periods ?? [],
       };
@@ -283,6 +299,11 @@ export default function EventModal({
     { value: "school", label: "학교 일정" },
   ];
 
+  const scheduleAreaOptions = [
+    { value: "창의적 체험활동", label: "창의적 체험활동" },
+    { value: "교과", label: "교과" },
+  ];
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6"
@@ -317,6 +338,25 @@ export default function EventModal({
             error={errors.title?.message}
             required
           />
+
+          <div className="grid grid-cols-2 gap-4">
+            <Select
+              {...register("scheduleArea")}
+              label="일정 구분"
+              options={scheduleAreaOptions}
+              error={errors.scheduleArea?.message}
+              placeholder="선택"
+            />
+            <Select
+              {...register("eventType")}
+              label="일정 유형"
+              options={eventTypeOptions}
+              error={errors.eventType?.message}
+              required={watch("scheduleArea") !== "교과"}
+              placeholder="선택"
+              disabled={watch("scheduleArea") === "교과"}
+            />
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <Input
@@ -381,25 +421,6 @@ export default function EventModal({
             </div>
 
             
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Select
-              {...register("eventType")}
-              label="일정 유형"
-              options={eventTypeOptions}
-              error={errors.eventType?.message}
-              required
-              placeholder="선택"
-            />
-            <Select
-              {...register("scope")}
-              label="범위"
-              options={scopeOptions}
-              error={errors.scope?.message}
-              required
-              placeholder="선택"
-            />
           </div>
 
           <div>
