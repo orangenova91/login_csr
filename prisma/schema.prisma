@@ -16,7 +16,7 @@ model User {
   hashedPassword String? // OAuth 사용자는 비밀번호가 없을 수 있음
   name           String?
   school         String?
-  role           String? // "student" 또는 "teacher"
+  role           String? // "student", "teacher", "admin", 또는 "superadmin"
   emailVerified  DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
@@ -35,6 +35,9 @@ model User {
   classes        Course[]        @relation("TeacherCourses")
   studentProfile StudentProfile?
   teacherProfile TeacherProfile?
+  adminProfile   AdminProfile?
+  createdSchools School[]        @relation("SchoolCreator") // 슈퍼어드민이 생성한 학교
+  adminSchools   School[]        @relation("SchoolAdminUser") // Admin이 담당하는 학교
 
   @@map("users")
 }
@@ -283,4 +286,52 @@ model Announcement {
   @@index([authorId])
   @@index([publishAt])
   @@index([publishedAt])
+}
+
+model School {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  name            String   @unique // 학교 이름
+  adminUserId     String   @db.ObjectId // 담당 Admin 계정 ID
+  admin           User     @relation("SchoolAdminUser", fields: [adminUserId], references: [id], onDelete: Cascade)
+  createdBy       String?  @db.ObjectId // 생성한 슈퍼어드민 ID
+  creator         User?    @relation("SchoolCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  adminProfiles   AdminProfile[] // AdminProfile과의 관계
+  
+  // 학교 구분
+  schoolType      String   @default("기타") // "초등학교", "중학교", "고등학교", "대학교", "기타"
+  
+  // 담당자 정보
+  contactName     String   // 스쿨허브 담당자 이름
+  contactPhone    String   // 담당자 전화번호
+  
+  // 학교 규모 정보 (학년별 학급수 및 총 학생수)
+  gradeInfo       String   // JSON 형식: [{grade: "1", classCount: 5, studentCount: 150}, ...]
+  totalClasses    Int?     // 총 학급수 (계산된 값)
+  totalStudents   Int?     // 총 학생수 (계산된 값)
+  
+  status          String   @default("active") // "active", "inactive", "suspended"
+  notes           String?  // 메모
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("schools")
+  @@index([adminUserId])
+  @@index([createdBy])
+  @@index([status])
+}
+
+model AdminProfile {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @unique @db.ObjectId
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  schoolId        String?  @db.ObjectId
+  school          School?  @relation(fields: [schoolId], references: [id], onDelete: SetNull)
+  phoneNumber     String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("admin_profiles")
+  @@index([schoolId])
 }

@@ -26,6 +26,10 @@ export default async function DashboardIndexPage() {
     redirect("/dashboard/admin");
   }
 
+  if (role === "superadmin") {
+    redirect("/dashboard/superadmin");
+  }
+
   return (
     <div className="border-4 border-dashed border-gray-200 rounded-lg p-8 bg-white">
       <h2 className="text-2xl font-bold text-gray-900 mb-2">

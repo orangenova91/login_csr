@@ -131,6 +131,14 @@ export default async function DashboardLayout({
             icon: <Settings className="w-5 h-5" />,
           },
         ]
+      : role === "superadmin"
+      ? [
+          {
+            href: "/dashboard/superadmin",
+            label: "슈퍼어드민 대시보드",
+            icon: <Shield className="w-5 h-5" />,
+          },
+        ]
       : [];
 
   return (

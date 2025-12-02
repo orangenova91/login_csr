@@ -7,7 +7,6 @@ type CliOptions = {
   email?: string;
   password?: string;
   name?: string;
-  school?: string;
   force?: boolean;
   resetPassword?: boolean;
   help?: boolean;
@@ -58,9 +57,6 @@ function parseArgs(argv: string[]): CliOptions {
       case "name":
         options.name = consumeValue();
         break;
-      case "school":
-        options.school = consumeValue();
-        break;
       default:
         console.warn(`[경고] 알 수 없는 옵션을 무시합니다: ${arg}`);
     }
@@ -71,30 +67,29 @@ function parseArgs(argv: string[]): CliOptions {
 
 function printHelp() {
   console.log(`
-SchoolHub 관리자 계정 스크립트
+SchoolHub 슈퍼어드민 계정 스크립트
 
 사용 방법:
-  # 새 관리자 계정 생성
-  npx tsx scripts/create-admin-user.ts --email admin@example.com --password "Abcd1234!" [--name "관리자"] [--school "스쿨허브"]
+  # 새 슈퍼어드민 계정 생성
+  npx tsx scripts/create-superadmin-user.ts --email superadmin@example.com --password "Abcd1234!" [--name "슈퍼관리자"]
   
-  # 관리자 비밀번호 재설정 (기존 정보 유지)
-  npx tsx scripts/create-admin-user.ts --email admin@example.com --password "새비밀번호123!" --reset-password
+  # 슈퍼어드민 비밀번호 재설정 (기존 정보 유지)
+  npx tsx scripts/create-superadmin-user.ts --email superadmin@example.com --password "새비밀번호123!" --reset-password
   
-  # 기존 계정을 관리자로 강제 갱신 (모든 정보 업데이트)
-  npx tsx scripts/create-admin-user.ts --email admin@example.com --password "Abcd1234!" --force
+  # 기존 계정을 슈퍼어드민으로 강제 갱신 (모든 정보 업데이트)
+  npx tsx scripts/create-superadmin-user.ts --email superadmin@example.com --password "Abcd1234!" --force
 
 옵션:
-  --email           관리자 이메일 (필수)
-  --password        관리자 비밀번호 (필수)
-  --name            표시 이름 (기본값: "관리자")
-  --school          소속 학교 (기본값: "SchoolHub")
-  --reset-password  기존 관리자 계정의 비밀번호만 재설정 (다른 정보는 유지)
-  --force           기존 계정이 있어도 비밀번호/역할/이름/학교를 모두 강제로 갱신
+  --email           슈퍼어드민 이메일 (필수)
+  --password        슈퍼어드민 비밀번호 (필수)
+  --name            표시 이름 (기본값: "슈퍼관리자")
+  --reset-password  기존 슈퍼어드민 계정의 비밀번호만 재설정 (다른 정보는 유지)
+  --force           기존 계정이 있어도 비밀번호/역할을 모두 강제로 갱신
   --help            이 도움말 표시
 
 예시:
   # 비밀번호를 잊었을 때 (기존 정보 유지)
-  npx tsx scripts/create-admin-user.ts --email admin@schoolhub.com --password "NewPass123!" --reset-password
+  npx tsx scripts/create-superadmin-user.ts --email superadmin@schoolhub.com --password "NewPass123!" --reset-password
 `.trim());
 }
 
@@ -144,23 +139,21 @@ async function main() {
   const needsPrompt =
     !options.email ||
     !options.password ||
-    (!options.force && !options.resetPassword && (!options.name || !options.school));
+    (!options.force && !options.resetPassword && !options.name);
 
   const rl = needsPrompt ? readline.createInterface({ input, output }) : null;
 
   try {
-    const email = await ensureValue("관리자 이메일", options.email, rl ?? null);
-    const password = await ensureValue("관리자 비밀번호", options.password, rl ?? null);
+    const email = await ensureValue("슈퍼어드민 이메일", options.email, rl ?? null);
+    const password = await ensureValue("슈퍼어드민 비밀번호", options.password, rl ?? null);
     
-    // reset-password 모드가 아닐 때만 name과 school 필요
-    const name = options.resetPassword ? undefined : await ensureValue("관리자 이름", options.name, rl ?? null, "관리자");
-    const school = options.resetPassword ? undefined : await ensureValue("소속 학교", options.school, rl ?? null, "SchoolHub");
+    // reset-password 모드가 아닐 때만 name 필요
+    const name = options.resetPassword ? undefined : await ensureValue("슈퍼어드민 이름", options.name, rl ?? null, "슈퍼관리자");
 
     if (rl && !options.force && !options.resetPassword) {
       console.log("\n입력 정보 확인");
       console.log(`- 이메일: ${email}`);
       console.log(`- 이름: ${name}`);
-      console.log(`- 소속: ${school}`);
       const confirmed = await confirmProceed(rl);
       if (!confirmed) {
         console.log("작업이 취소되었습니다.");
@@ -199,7 +192,7 @@ async function main() {
           },
         });
 
-        console.log(`관리자 계정(${email})의 비밀번호가 재설정되었습니다.`);
+        console.log(`슈퍼어드민 계정(${email})의 비밀번호가 재설정되었습니다.`);
         console.log(`다른 정보는 변경되지 않았습니다.`);
       } else if (options.force) {
         // 강제 갱신: 모든 정보 업데이트
@@ -208,13 +201,12 @@ async function main() {
           data: {
             hashedPassword,
             name,
-            school,
-            role: "admin",
+            role: "superadmin",
             emailVerified: new Date(),
           },
         });
 
-        console.log(`기존 사용자(${email})를 관리자 계정으로 갱신했습니다.`);
+        console.log(`기존 사용자(${email})를 슈퍼어드민 계정으로 갱신했습니다.`);
       } else {
         console.log("이미 동일한 이메일의 사용자가 존재합니다.");
         console.log("  - 비밀번호만 재설정: --reset-password 옵션 사용");
@@ -227,16 +219,15 @@ async function main() {
           email,
           hashedPassword,
           name,
-          school,
-          role: "admin",
+          role: "superadmin",
           emailVerified: new Date(),
         },
       });
 
-      console.log(`새 관리자 계정이 생성되었습니다: ${email}`);
+      console.log(`새 슈퍼어드민 계정이 생성되었습니다: ${email}`);
     }
   } catch (error) {
-    console.error("관리자 생성 중 오류가 발생했습니다:", error instanceof Error ? error.message : error);
+    console.error("슈퍼어드민 생성 중 오류가 발생했습니다:", error instanceof Error ? error.message : error);
     process.exitCode = 1;
   } finally {
     if (rl) await rl.close();

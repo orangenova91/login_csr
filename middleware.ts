@@ -24,6 +24,10 @@ export default withAuth(
           return token.role === "student";
         }
 
+        if (pathname.startsWith("/dashboard/superadmin")) {
+          return token.role === "superadmin";
+        }
+
         if (pathname.startsWith("/dashboard")) {
           return !!token;
         }

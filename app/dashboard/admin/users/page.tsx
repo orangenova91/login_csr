@@ -101,6 +101,15 @@ export default async function AdminUsersPage() {
   const [users, studentProfiles] = (await Promise.all([
     prisma.user.findMany({
       orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        school: true,
+        role: true,
+        createdAt: true,
+        // hashedPassword는 제외 (보안상 노출하지 않음)
+      },
     }),
     prismaAny.studentProfile.findMany({
       select: {
