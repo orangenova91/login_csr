@@ -249,7 +249,7 @@ model CalendarEvent {
   description      String?
   startDate        DateTime
   endDate          DateTime?
-  eventType        String?  // "평가", "행사", "휴업일", "개인일정", "기타"
+  eventType        String?  @default("기타") // "평가", "행사", "휴업일", "개인일정", "기타"
   scope            String   // "school" | "personal" | "class"
   school           String?  // scope가 "school"일 때 학교 필터링
   teacherId        String?  @db.ObjectId // 개인일정일 때
