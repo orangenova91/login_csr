@@ -150,12 +150,27 @@ export default function ProfileForm({ initialData, onSuccess }: ProfileFormProps
       <section className="bg-white rounded-lg border border-gray-200 p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">기본 정보</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input
+            {...register("region")}
+            type="text"
+            label="지역"
+            error={errors.region?.message}
+            readOnly
+          />
             <Input
               {...register("school")}
               type="text"
               label="학교"
               error={errors.school?.message}
               autoComplete="organization"
+              readOnly
+            />
+            <Input
+              {...register("studentId")}
+              type="text"
+              label="학번"
+              error={errors.studentId?.message}
+              readOnly
             />
           <Input
             {...register("name")}
@@ -163,30 +178,8 @@ export default function ProfileForm({ initialData, onSuccess }: ProfileFormProps
             label="이름"
             error={errors.name?.message}
             autoComplete="name"
+            readOnly
           />
-          <Input
-            {...register("region")}
-            type="text"
-            label="지역"
-            error={errors.region?.message}
-          />
-          <Input
-            {...register("studentId")}
-            type="text"
-            label="학번"
-            error={errors.studentId?.message}
-          />
-          <div className="w-full">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              이메일
-            </label>
-            <input
-              type="email"
-              value={initialData?.user?.email || ""}
-              readOnly
-              className="flex h-10 w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-gray-100 text-gray-700 cursor-not-allowed"
-            />
-          </div>
         </div>
       </section>
 
@@ -220,34 +213,25 @@ export default function ProfileForm({ initialData, onSuccess }: ProfileFormProps
             error={errors.classLabel?.message}
           />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* 학적상태, 성별, 전화번호, 이메일을 한 줄에 배치 */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           <Input
-            {...register("major")}
+            {...register("academicStatus")}
             type="text"
-            label="전공"
-            error={errors.major?.message}
+            label="학적상태"
+            error={errors.academicStatus?.message}
+            readOnly
           />
           <Select
             {...register("sex")}
             label="성별"
             error={errors.sex?.message}
+            disabled
             options={[
               { value: "", label: "선택하세요" },
               { value: "남", label: "남" },
               { value: "여", label: "여" },
             ]}
-          />
-          <Input
-            {...register("classOfficer")}
-            type="text"
-            label="학급직"
-            error={errors.classOfficer?.message}
-          />
-          <Input
-            {...register("specialEducation")}
-            type="text"
-            label="특수교육"
-            error={errors.specialEducation?.message}
           />
           <Input
             {...register("phoneNumber")}
@@ -256,17 +240,45 @@ export default function ProfileForm({ initialData, onSuccess }: ProfileFormProps
             error={errors.phoneNumber?.message}
             autoComplete="tel"
           />
+          <div className="w-full">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              이메일
+            </label>
+            <input
+              type="email"
+              value={initialData?.user?.email || ""}
+              readOnly
+              className="flex h-10 w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-gray-100 text-gray-700 cursor-not-allowed"
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
-            {...register("siblings")}
+            {...register("classOfficer")}
             type="text"
-            label="형제관계"
-            error={errors.siblings?.message}
+            label="학급직"
+            error={errors.classOfficer?.message}
+            readOnly
           />
           <Input
-            {...register("academicStatus")}
+            {...register("major")}
             type="text"
-            label="학적상태"
-            error={errors.academicStatus?.message}
+            label="희망전공"
+            error={errors.major?.message}
+          />
+            <Input
+              {...register("siblings")}
+              type="text"
+              label="형제관계"
+              error={errors.siblings?.message}
+              readOnly
+            />
+          <Input
+            {...register("specialEducation")}
+            type="text"
+            label="특수교육 여부"
+            error={errors.specialEducation?.message}
+            readOnly
           />
         </div>
         <div className="mt-4">

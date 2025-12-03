@@ -11,7 +11,7 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ className, label, error, id, options, required, placeholder, ...props }, ref) => {
+  ({ className, label, error, id, options, required, placeholder, disabled, ...props }, ref) => {
     const selectId = id || `select-${Math.random().toString(36).substring(7)}`;
     const ariaRequired = props["aria-required"];
     const isRequired =
@@ -34,8 +34,12 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           ref={ref}
           id={selectId}
           required={required}
+          disabled={disabled}
           className={cn(
-            "flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+            "flex h-10 w-full rounded-md border border-gray-300 px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
+            disabled
+              ? "bg-gray-100 text-gray-700 cursor-not-allowed"
+              : "bg-white text-gray-900",
             error && "border-red-500 focus-visible:ring-red-500",
             className
           )}

@@ -119,7 +119,7 @@ export default function CreateClassForm({
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      academicYear: "",
+      academicYear: `${currentYear}`,
       semester: "",
       subjectGroup: "",
       subjectArea: "",
@@ -269,7 +269,6 @@ export default function CreateClassForm({
         <Input
           {...register("academicYear")}
           label="학년도"
-          value={`${currentYear}`}
           error={errors.academicYear?.message}
           aria-required="true"
         />

@@ -230,14 +230,52 @@ export default async function TeacherDashboardPage() {
 
   const weeklyCalendarEvents = await prisma.calendarEvent.findMany({
     where: {
-      OR: [
-        { scope: "school", school: session.user.school || undefined },
-        { scope: "personal", teacherId: session.user.id },
+      AND: [
+        {
+          OR: [
+            { scope: "school", school: session.user.school || undefined },
+            { scope: "personal", teacherId: session.user.id },
+          ],
+        },
+        {
+          // 이벤트가 주간 범위와 겹치는 경우를 모두 포함
+          OR: [
+            // 시작일이 주간 범위 내에 있는 경우
+            {
+              startDate: {
+                gte: weekStart,
+                lt: weekEnd,
+              },
+            },
+            // 종료일이 주간 범위 내에 있는 경우
+            {
+              endDate: {
+                gte: weekStart,
+                lt: weekEnd,
+              },
+            },
+            // 시작일이 주간 범위 이전이고 종료일이 주간 범위 이후인 경우 (주간을 완전히 포함하는 긴 이벤트)
+            {
+              startDate: {
+                lt: weekStart,
+              },
+              endDate: {
+                gte: weekEnd,
+              },
+            },
+            // 시작일이 주간 범위 이전이고 종료일이 없거나 주간 범위 이후인 경우
+            {
+              startDate: {
+                lt: weekStart,
+              },
+              OR: [
+                { endDate: null },
+                { endDate: { gte: weekStart } },
+              ],
+            },
+          ],
+        },
       ],
-      startDate: {
-        gte: weekStart,
-        lt: weekEnd,
-      },
     },
     orderBy: { startDate: "asc" },
   });
@@ -306,9 +344,14 @@ export default async function TeacherDashboardPage() {
     dayEnd.setDate(dayEnd.getDate() + 1);
 
     const eventsForDay = weeklyCalendarEvents
-      .filter(
-        (event) => event.startDate >= dayStart && event.startDate < dayEnd
-      )
+      .filter((event) => {
+        // 이벤트의 종료일이 없으면 시작일을 종료일로 사용
+        const eventEnd = event.endDate || event.startDate;
+        // 이벤트가 해당 날짜와 겹치는지 확인:
+        // - 이벤트 시작일이 해당 날짜 종료 전이고
+        // - 이벤트 종료일이 해당 날짜 시작 이후
+        return event.startDate < dayEnd && eventEnd >= dayStart;
+      })
       .map((event) => ({
         id: event.id,
         title: event.title,
