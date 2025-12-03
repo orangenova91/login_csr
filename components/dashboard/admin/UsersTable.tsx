@@ -29,10 +29,10 @@ const columnConfig: Array<{
   label: string;
   align?: "left" | "center";
 }> = [
-  { key: "name", label: "이름" },
   { key: "school", label: "학교/조직" },
-  { key: "role", label: "역할", align: "center" },
   { key: "studentId", label: "학번" },
+  { key: "name", label: "이름" },
+  { key: "role", label: "역할", align: "center" },
   { key: "createdAt", label: "가입일" },
   { key: "email", label: "이메일" },
 ];
@@ -65,7 +65,7 @@ export function UsersTable({
     direction: "asc",
   });
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(initialPageSize);
+  const [pageSize, setPageSize] = useState<number | "all">(initialPageSize);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
     role: "",
@@ -106,15 +106,24 @@ export function UsersTable({
     });
   }, [rows, filters]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+  const totalPages = useMemo(() => {
+    if (pageSize === "all") return 1;
+    return Math.max(1, Math.ceil(filteredRows.length / (pageSize as number)));
+  }, [filteredRows.length, pageSize]);
   
   // 먼저 현재 페이지의 데이터를 가져온 후 정렬
   const paginatedRows = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    const pageData = filteredRows.slice(start, start + pageSize);
-    const sorted = [...pageData];
+    const sorted = [...filteredRows];
     sorted.sort((a, b) => compareValues(a, b, sortConfig));
-    return sorted;
+    
+    // '전체' 선택 시 모든 데이터 반환
+    if (pageSize === "all") {
+      return sorted;
+    }
+    
+    // 페이지네이션 적용
+    const start = (currentPage - 1) * (pageSize as number);
+    return sorted.slice(start, start + (pageSize as number));
   }, [filteredRows, currentPage, pageSize, sortConfig]);
 
   // 필터 변경 시 첫 페이지로 이동
@@ -148,8 +157,9 @@ export function UsersTable({
     setCurrentPage(nextPage);
   };
 
-  const handlePageSizeChange = (size: number) => {
-    setPageSize(size);
+  const handlePageSizeChange = (size: string) => {
+    const newSize = size === "all" ? "all" : Number(size);
+    setPageSize(newSize);
     setCurrentPage(1);
   };
 
@@ -319,14 +329,14 @@ export function UsersTable({
         <tbody className="divide-y divide-gray-100 bg-white">
           {paginatedRows.map((row) => (
             <tr key={row.id} className="hover:bg-gray-50">
-              <td className="px-4 py-3 font-medium text-gray-900">{row.name}</td>
               <td className="px-4 py-3 text-gray-600">{row.school}</td>
+              <td className="px-4 py-3 text-gray-600">{row.studentId}</td>
+              <td className="px-4 py-3 font-medium text-gray-900">{row.name}</td>
               <td className="px-4 py-3 text-center">
                 <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-700">
                   {row.role}
                 </span>
               </td>
-              <td className="px-4 py-3 text-gray-600">{row.studentId}</td>
               <td className="px-4 py-3 text-gray-500">
                 {new Date(row.createdAt).toLocaleDateString("ko-KR")}
               </td>
@@ -410,8 +420,8 @@ export function UsersTable({
           <label className="flex items-center gap-2 text-xs sm:text-sm">
             <span>표시 수</span>
             <select
-              value={pageSize}
-              onChange={(event) => handlePageSizeChange(Number(event.target.value))}
+              value={pageSize === "all" ? "all" : String(pageSize)}
+              onChange={(event) => handlePageSizeChange(event.target.value)}
               className="border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {normalizedOptions.map((option) => (
@@ -419,6 +429,7 @@ export function UsersTable({
                   {option}명
                 </option>
               ))}
+              <option value="all">전체</option>
             </select>
           </label>
         </div>

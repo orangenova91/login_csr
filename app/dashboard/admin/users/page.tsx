@@ -84,7 +84,7 @@ export default async function AdminUsersPage() {
     redirect("/login");
   }
 
-  if (session.user.role !== "admin") {
+  if (session.user.role !== "admin" && session.user.role !== "superadmin") {
     redirect("/dashboard");
   }
 
@@ -98,29 +98,47 @@ export default async function AdminUsersPage() {
 
   const prismaAny = prisma as any;
 
-  const [users, studentProfiles] = (await Promise.all([
-    prisma.user.findMany({
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        school: true,
-        role: true,
-        createdAt: true,
-        // hashedPassword는 제외 (보안상 노출하지 않음)
-      },
-    }),
-    prismaAny.studentProfile.findMany({
-      select: {
-        userId: true,
-        grade: true,
-        classLabel: true,
-        section: true,
-        studentId: true,
-      },
-    }) as Promise<StudentProfileSummary[]>,
-  ])) as [User[], StudentProfileSummary[]];
+  // 관리자의 학교 정보 가져오기
+  const adminSchool = session.user.school;
+
+  // superadmin인 경우 모든 사용자, admin인 경우 같은 학교의 사용자만
+  const userWhereCondition = session.user.role === "superadmin" 
+    ? undefined 
+    : adminSchool 
+    ? { school: adminSchool }
+    : { school: null }; // 학교 정보가 없는 경우 빈 결과
+
+  // 먼저 사용자 목록 가져오기
+  const users = await prisma.user.findMany({
+    where: userWhereCondition,
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      school: true,
+      role: true,
+      createdAt: true,
+      // hashedPassword는 제외 (보안상 노출하지 않음)
+    },
+  });
+
+  // 해당 사용자들의 studentProfile 가져오기
+  const userIds = users.map((user) => user.id);
+  const studentProfiles = userIds.length > 0
+    ? ((await prismaAny.studentProfile.findMany({
+        where: {
+          userId: { in: userIds },
+        },
+        select: {
+          userId: true,
+          grade: true,
+          classLabel: true,
+          section: true,
+          studentId: true,
+        },
+      })) as StudentProfileSummary[])
+    : [];
 
   const studentProfileMap = new Map<string, StudentProfileSummary>(
     studentProfiles.map((profile) => [profile.userId, profile]),

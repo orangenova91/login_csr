@@ -10,6 +10,9 @@ type Student = {
   id: string;
   name: string | null;
   email: string;
+  studentProfile?: {
+    studentId: string | null;
+  } | null;
 };
 
 type ClassGroup = {
@@ -528,6 +531,11 @@ export default function CreateClassGroupButton({
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <div className="text-sm font-medium text-gray-900">
+                                {student.studentProfile?.studentId && (
+                                  <span className="text-gray-500 mr-1">
+                                    [{student.studentProfile.studentId}]
+                                  </span>
+                                )}
                                 {student.name ?? "이름 없음"}
                               </div>
                               {studentClassGroupMap.has(student.id) && (

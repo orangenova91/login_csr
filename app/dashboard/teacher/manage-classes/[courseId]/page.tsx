@@ -67,7 +67,16 @@ export default async function ManageClassDetailPage({
   const students =
     (await (prisma as any).user.findMany({
       where: { role: "student" },
-      select: { id: true, name: true, email: true },
+      select: { 
+        id: true, 
+        name: true, 
+        email: true,
+        studentProfile: {
+          select: {
+            studentId: true,
+          },
+        },
+      },
       orderBy: { createdAt: "desc" },
     })) ?? [];
 
