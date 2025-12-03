@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { parse } from "csv-parse/sync";
 
+export const dynamic = 'force-dynamic';
+
 type CsvRow = {
   email?: string;
   name?: string;

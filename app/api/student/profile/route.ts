@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { updateStudentProfileSchema } from "@/lib/validations/student";
 
+export const dynamic = 'force-dynamic';
+
 // GET: 현재 로그인한 학생의 프로필 조회
 export async function GET() {
   try {
