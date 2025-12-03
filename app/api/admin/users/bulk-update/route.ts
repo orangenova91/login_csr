@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
         const updateData: any = {};
         if (row.name !== undefined) updateData.name = row.name?.trim() || null;
         if (row.school !== undefined) updateData.school = row.school?.trim() || null;
-        if (role !== undefined) updateData.role = role || null;
+        if (row.role !== undefined) updateData.role = role || null;
 
         if (Object.keys(updateData).length > 0) {
           await prisma.user.update({

@@ -46,7 +46,7 @@ export default async function TeacherSchedulePage() {
     description: string | null;
     startDate: Date;
     endDate: Date | null;
-    eventType: string;
+    eventType: string | null;
     scope: string;
     school: string | null;
     courseId: string | null;
@@ -61,7 +61,7 @@ export default async function TeacherSchedulePage() {
     description: string | null;
     startDate: Date;
     endDate: Date | null;
-    eventType: string;
+    eventType: string | null;
     scope: string;
     school: string | null;
     courseId: string | null;

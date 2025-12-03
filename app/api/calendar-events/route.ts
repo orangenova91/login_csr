@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
       description: string | null;
       startDate: Date;
       endDate: Date | null;
-      eventType: string;
+      eventType: string | null;
       scope: string;
       school: string | null;
       courseId: string | null;
