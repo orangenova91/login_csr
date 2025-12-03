@@ -33,6 +33,13 @@ export default async function ManageClassDetailPage({
   }
 
   const course = await (prisma as unknown as {
+    classGroup: {
+      findMany: (args: {
+        where: { courseId: string };
+        select: { id: true; name: true };
+        orderBy?: { createdAt: "asc" | "desc" };
+      }) => Promise<{ id: string; name: string }[]>;
+    };
     course: {
       findFirst: (args: {
         where: { id: string; teacherId: string };
@@ -63,6 +70,13 @@ export default async function ManageClassDetailPage({
   if (!course) {
     notFound();
   }
+
+  const classGroups =
+    (await (prisma as any).classGroup.findMany({
+      where: { courseId: course.id },
+      select: { id: true, name: true },
+      orderBy: { createdAt: "asc" },
+    })) ?? [];
 
   const students =
     (await (prisma as any).user.findMany({
@@ -138,6 +152,23 @@ export default async function ManageClassDetailPage({
             <p className="text-sm text-gray-600 mt-1">
               강사 {course.instructor} · 강의실 {course.classroom}
             </p>
+            {classGroups.length > 0 && (
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-600">
+                <span className="font-medium text-gray-700">
+                  학반 ({classGroups.length}개)
+                </span>
+                <div className="flex flex-wrap gap-1">
+                  {classGroups.map((group) => (
+                    <span
+                      key={group.id}
+                      className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-700 border border-gray-200"
+                    >
+                      {group.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           <div className="inline-flex items-center gap-2 rounded-md bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
             <span>수업 코드</span>
