@@ -6,7 +6,7 @@ type WeeklyScheduleEvent = {
   id: string;
   title: string;
   displayTime: string;
-  eventType: string;
+  eventType: string | null;
   department?: string;
   description?: string;
   startDateISO: string;
@@ -110,7 +110,7 @@ export default function WeeklyScheduleSection({
                         <div className="flex items-center justify-between text-xs text-gray-500">
                           <span>{event.displayTime}</span>
                           <span className="text-[11px] font-medium text-blue-600">
-                            {event.eventType}
+                            {event.eventType || "교과"}
                           </span>
                         </div>
                         <p className="mt-2 text-sm font-semibold text-gray-900 line-clamp-2">
@@ -144,7 +144,7 @@ export default function WeeklyScheduleSection({
                 </h4>
               </div>
               <span className="inline-flex items-center rounded-full bg-white px-3 py-1 text-xs font-medium text-blue-700 border border-blue-200">
-                {selectedEvent.eventType}
+                {selectedEvent.eventType || "교과"}
               </span>
             </div>
 

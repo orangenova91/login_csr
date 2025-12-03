@@ -38,9 +38,6 @@ export default async function TeacherSchedulePage() {
         gte: startDate,
         lte: endDate,
       },
-      eventType: {
-        not: null,
-      },
     },
     orderBy: { startDate: "asc" },
   }) as Array<{

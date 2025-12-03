@@ -144,9 +144,6 @@ export default async function StudentDashboardPage() {
         gte: weekStart,
         lt: weekEnd,
       },
-      eventType: {
-        not: null,
-      },
     },
     orderBy: { startDate: "asc" },
   });

@@ -286,13 +286,6 @@ export default async function TeacherDashboardPage() {
             },
           ],
         },
-        // Prisma 클라이언트가 eventType을 non-null로 기대하는 환경에서
-        // null 값이 있는 문서를 제외하여 런타임 오류를 방지
-        {
-          eventType: {
-            not: null,
-          },
-        },
       ],
     },
     orderBy: { startDate: "asc" },

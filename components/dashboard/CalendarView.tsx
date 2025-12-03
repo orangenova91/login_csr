@@ -26,7 +26,7 @@ export interface CalendarEvent {
   end?: string | null;
   allDay: boolean;
   extendedProps: {
-    eventType: string;
+    eventType: string | null;
     scope: string;
     school?: string;
     courseId?: string;
@@ -170,6 +170,11 @@ const CalendarView = forwardRef<CalendarViewHandle, CalendarViewProps>(
       "진로": "#16a34a", // green
       "봉사": "#ca8a04", // yellow
     };
+    
+    // eventType이 null인 경우 (교과 일정) 기본 색상 사용
+    const eventType = event.extendedProps.eventType;
+    const defaultColor = "#6b7280"; // gray for 교과 (subject) events
+    const eventColor = eventType && colors[eventType] ? colors[eventType] : defaultColor;
 
     return {
       id: event.id,
@@ -177,8 +182,8 @@ const CalendarView = forwardRef<CalendarViewHandle, CalendarViewProps>(
       start: event.start,
       end: event.end || undefined,
       allDay: event.allDay,
-      backgroundColor: colors[event.extendedProps.eventType] || colors["봉사"],
-      borderColor: colors[event.extendedProps.eventType] || colors["봉사"],
+      backgroundColor: eventColor,
+      borderColor: eventColor,
       extendedProps: event.extendedProps,
       description: event.description,
     };

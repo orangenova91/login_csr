@@ -105,7 +105,7 @@ export default function TeacherScheduleClient({ initialEvents }: TeacherSchedule
                 <div className="flex items-center justify-between text-sm text-gray-600">
                   <span>{formatDate(startDate)}</span>
                   <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">
-                    {event.extendedProps.eventType}
+                    {event.extendedProps.eventType || "교과"}
                   </span>
                 </div>
                 <p className="mt-2 text-gray-900 font-medium">{event.title}</p>
