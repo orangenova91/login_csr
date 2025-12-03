@@ -65,8 +65,12 @@ const getKoreaTime = (): Date => {
   const minute = parseInt(parts.find(p => p.type === "minute")?.value || "0");
   const second = parseInt(parts.find(p => p.type === "second")?.value || "0");
   
-  // 한국 시간대의 Date 객체 생성 (로컬 시간으로 해석되지만 값은 한국 시간 기준)
-  return new Date(year, month - 1, day, hour, minute, second);
+  // 한국 시간 기준으로 ISO 문자열 생성 (UTC+9 오프셋 포함)
+  // 이렇게 하면 서버의 로컬 타임존과 무관하게 올바른 UTC 시간을 얻을 수 있음
+  const koreaTimeISO = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:${String(second).padStart(2, '0')}+09:00`;
+  
+  // UTC로 변환된 Date 객체 반환
+  return new Date(koreaTimeISO);
 };
 
 // 한국 시간 기준으로 주간 시작(월요일 자정)을 계산하는 함수

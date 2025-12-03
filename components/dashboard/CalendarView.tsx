@@ -6,6 +6,7 @@ import {
   useCallback,
   forwardRef,
   useImperativeHandle,
+  useRef,
 } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
@@ -54,7 +55,7 @@ const CalendarView = forwardRef<CalendarViewHandle, CalendarViewProps>(
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedEndDate, setSelectedEndDate] = useState<Date | null>(null);
-  const [calendarRef, setCalendarRef] = useState<FullCalendar | null>(null);
+  const calendarRef = useRef<FullCalendar | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
     const openEventModal = useCallback((eventData: CalendarEvent) => {
@@ -76,9 +77,9 @@ const CalendarView = forwardRef<CalendarViewHandle, CalendarViewProps>(
   const refreshEvents = useCallback(async () => {
     setIsLoading(true);
     try {
-      if (!calendarRef) return;
+      if (!calendarRef.current) return;
 
-      const calendarApi = calendarRef.getApi();
+      const calendarApi = calendarRef.current.getApi();
       const start = calendarApi.view.activeStart.toISOString();
       const end = calendarApi.view.activeEnd.toISOString();
 
@@ -187,8 +188,8 @@ const CalendarView = forwardRef<CalendarViewHandle, CalendarViewProps>(
   useEffect(() => {
     setEvents(initialEvents);
     // FullCalendar에 이벤트 업데이트 알림
-    if (calendarRef) {
-      calendarRef.getApi().refetchEvents();
+    if (calendarRef.current) {
+      calendarRef.current.getApi().refetchEvents();
     }
   }, [initialEvents]);
 
@@ -215,7 +216,7 @@ const CalendarView = forwardRef<CalendarViewHandle, CalendarViewProps>(
 
         <div className="rounded-lg border border-gray-200 bg-white p-4">
           <FullCalendar
-            ref={(ref) => setCalendarRef(ref)}
+            ref={calendarRef}
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
             initialView="dayGridMonth"
             headerToolbar={{
