@@ -78,7 +78,12 @@ export async function GET(request: NextRequest) {
     }
 
     const events = await prisma.calendarEvent.findMany({
-      where,
+      where: {
+        ...where,
+        eventType: {
+          not: null,
+        },
+      },
       orderBy: { startDate: "asc" },
     }) as Array<{
       id: string;
