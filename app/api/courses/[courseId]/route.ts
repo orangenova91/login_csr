@@ -46,6 +46,8 @@ const updateCourseSchema = z.object({
   instructor: z.string().trim().optional(),
 });
 
+export const dynamic = 'force-dynamic';
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: { courseId: string } }

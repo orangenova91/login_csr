@@ -23,6 +23,8 @@ const createEventSchema = z.object({
   periods: z.array(z.enum(PERIOD_VALUES)).optional(),
 });
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

@@ -47,6 +47,8 @@ const createClassSchema = z.object({
   instructor: z.string().trim().optional(),
 });
 
+export const dynamic = 'force-dynamic';
+
 async function generateUniqueJoinCode() {
   const MAX_ATTEMPTS = 5;
 

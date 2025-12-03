@@ -15,6 +15,8 @@ const createAnnouncementSchema = z.object({
   publishAt: z.string().datetime().optional(),
 });
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

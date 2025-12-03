@@ -17,6 +17,8 @@ const createClassGroupSchema = z.object({
   studentIds: z.array(z.string()),
 });
 
+export const dynamic = 'force-dynamic';
+
 // 학반 목록 조회
 export async function GET(
   request: NextRequest,

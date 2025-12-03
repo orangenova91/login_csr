@@ -15,6 +15,8 @@ const updateAnnouncementSchema = z.object({
   publishAt: z.string().datetime().optional(),
 });
 
+export const dynamic = 'force-dynamic';
+
 // 개별 공지사항 조회
 export async function GET(
   request: NextRequest,
