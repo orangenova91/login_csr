@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -9,6 +10,9 @@ type Student = {
   id: string;
   name: string | null;
   email: string;
+  studentProfile?: {
+    studentId: string | null;
+  } | null;
 };
 
 type ClassGroup = {
@@ -16,7 +20,9 @@ type ClassGroup = {
   name: string;
   period: string | null;
   schedules: Array<{ day: string; period: string }>;
+  courseId: string;
   studentIds: string[];
+  createdAt: string;
 };
 
 type EditClassGroupModalProps = {
@@ -43,9 +49,16 @@ export default function EditClassGroupModal({
   ]);
   const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedClassGroupFilter, setSelectedClassGroupFilter] = useState<string>("");
+  const [classGroups, setClassGroups] = useState<ClassGroup[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const daysOfWeek = [
     { value: "", label: "요일 선택" },
@@ -61,6 +74,41 @@ export default function EditClassGroupModal({
     label: `${i + 1}교시`,
   }));
 
+  // 학반 목록 로드
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const loadClassGroups = async () => {
+      try {
+        const response = await fetch(`/api/courses/${courseId}/class-groups`);
+        if (response.ok) {
+          const data = await response.json();
+          setClassGroups(data.classGroups || []);
+        }
+      } catch (error) {
+        console.error("학반 목록 로드 실패:", error);
+      }
+    };
+
+    loadClassGroups();
+  }, [courseId, isOpen]);
+
+  // body 스크롤 잠금
+  useEffect(() => {
+    if (isOpen) {
+      // 모달이 열릴 때 body 스크롤 잠금
+      document.body.style.overflow = 'hidden';
+    } else {
+      // 모달이 닫힐 때 body 스크롤 복원
+      document.body.style.overflow = '';
+    }
+    
+    // cleanup: 컴포넌트 언마운트 시에도 복원
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   // 모달이 열릴 때 기존 데이터로 초기화
   useEffect(() => {
     if (isOpen && classGroup) {
@@ -73,6 +121,7 @@ export default function EditClassGroupModal({
       );
       setSelectedStudentIds(new Set(classGroup.studentIds || []));
       setSearchQuery("");
+      setSelectedClassGroupFilter("");
       setValidationError(null);
     }
   }, [isOpen, classGroup]);
@@ -118,17 +167,54 @@ export default function EditClassGroupModal({
     return parseInt(period, 10) || 0;
   }, [period]);
 
+  // 학생이 속한 학반 매핑
+  const studentClassGroupMap = useMemo(() => {
+    const map = new Map<string, string>(); // studentId -> classGroupName
+    classGroups.forEach((group) => {
+      group.studentIds.forEach((studentId) => {
+        map.set(studentId, group.name);
+      });
+    });
+    return map;
+  }, [classGroups]);
+
   const filteredStudents = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return students;
+    let result = students;
+
+    // 학반 필터 적용
+    if (selectedClassGroupFilter) {
+      const selectedGroup = classGroups.find(
+        (g) => g.id === selectedClassGroupFilter
+      );
+      if (selectedGroup) {
+        const groupStudentIds = new Set(selectedGroup.studentIds);
+        result = result.filter((student) => groupStudentIds.has(student.id));
+      }
     }
-    const query = searchQuery.toLowerCase().trim();
-    return students.filter(
-      (student) =>
-        student.name?.toLowerCase().includes(query) ||
-        student.email.toLowerCase().includes(query)
-    );
-  }, [students, searchQuery]);
+
+    // 검색 필터 적용 (콤마로 구분된 다중 검색어 지원)
+    if (searchQuery.trim()) {
+      // 콤마로 구분하여 검색어 배열 생성
+      const searchTerms = searchQuery
+        .split(',')
+        .map(term => term.trim().toLowerCase())
+        .filter(term => term.length > 0); // 빈 검색어 제거
+
+      if (searchTerms.length > 0) {
+        result = result.filter((student) => {
+          const studentName = student.name?.toLowerCase() || '';
+          const studentEmail = student.email.toLowerCase();
+          
+          // 여러 검색어 중 하나라도 포함되면 표시 (OR 검색)
+          return searchTerms.some(term => 
+            studentName.includes(term) || studentEmail.includes(term)
+          );
+        });
+      }
+    }
+
+    return result;
+  }, [students, searchQuery, selectedClassGroupFilter, classGroups]);
 
   const toggleStudent = useCallback((studentId: string) => {
     setSelectedStudentIds((prev) => {
@@ -141,6 +227,43 @@ export default function EditClassGroupModal({
       return next;
     });
   }, []);
+
+  // 필터링된 학생들 전체 선택
+  const selectAllFiltered = useCallback(() => {
+    setSelectedStudentIds((prev) => {
+      const next = new Set(prev);
+      filteredStudents.forEach((student) => {
+        next.add(student.id);
+      });
+      return next;
+    });
+  }, [filteredStudents]);
+
+  // 필터링된 학생들 전체 해제
+  const deselectAllFiltered = useCallback(() => {
+    setSelectedStudentIds((prev) => {
+      const next = new Set(prev);
+      filteredStudents.forEach((student) => {
+        next.delete(student.id);
+      });
+      return next;
+    });
+  }, [filteredStudents]);
+
+  // 필터링된 학생 중 선택된 학생 수
+  const selectedFilteredCount = useMemo(() => {
+    return filteredStudents.filter((student) =>
+      selectedStudentIds.has(student.id)
+    ).length;
+  }, [filteredStudents, selectedStudentIds]);
+
+  // 필터링된 학생들이 모두 선택되었는지 확인
+  const allFilteredSelected = useMemo(() => {
+    return (
+      filteredStudents.length > 0 &&
+      filteredStudents.every((student) => selectedStudentIds.has(student.id))
+    );
+  }, [filteredStudents, selectedStudentIds]);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -270,22 +393,24 @@ export default function EditClassGroupModal({
     }
   }, [courseId, classGroup.id, classGroup.name, handleClose, onUpdated]);
 
-  if (!isOpen) return null;
-
-  return (
+  const modalContent = isOpen ? (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 px-4 py-6"
       role="dialog"
       aria-modal="true"
+      aria-labelledby="modal-title"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           handleClose();
         }
       }}
     >
-      <div className="relative w-full max-w-2xl rounded-xl bg-white shadow-xl max-h-[90vh] flex flex-col">
+      <div 
+        className="relative w-full max-w-2xl rounded-xl bg-white shadow-xl max-h-[90vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-          <h2 className="text-lg font-semibold text-gray-900">학반 수정</h2>
+          <h2 id="modal-title" className="text-lg font-semibold text-gray-900">학반 수정</h2>
           <button
             type="button"
             onClick={handleClose}
@@ -307,7 +432,7 @@ export default function EditClassGroupModal({
               htmlFor="editClassName"
               className="block text-sm font-medium text-gray-700 mb-2"
             >
-              학반명 <span className="text-red-500">*</span>
+              학반명
             </label>
             <Input
               id="editClassName"
@@ -386,15 +511,58 @@ export default function EditClassGroupModal({
               <label className="block text-sm font-medium text-gray-700">
                 수강생 추가하기 <span className="text-red-500">*</span>
               </label>
+              {filteredStudents.length > 0 && (
+                <div className="flex items-center gap-2">
+                  {allFilteredSelected ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={deselectAllFiltered}
+                      className="text-xs"
+                    >
+                      전체 해제
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={selectAllFiltered}
+                      className="text-xs"
+                    >
+                      전체 선택
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
-            <div className="mb-2">
-              <Input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="학생 이름 또는 이메일로 검색..."
-                className="w-full"
-              />
+            <div className="mb-2 space-y-2">
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <Input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="학생 이름 또는 이메일로 검색 (콤마로 구분: 김철수, 이영희)"
+                    className="w-full"
+                  />
+                </div>
+                <div className="w-40">
+                  <Select
+                    options={[
+                      { value: "", label: "전체 학반" },
+                      ...classGroups.map((group) => ({
+                        value: group.id,
+                        label: group.name,
+                      })),
+                    ]}
+                    value={selectedClassGroupFilter}
+                    onChange={(e) => setSelectedClassGroupFilter(e.target.value)}
+                    disabled={classGroups.length === 0}
+                  />
+                </div>
+              </div>
             </div>
             <div className="flex-1 overflow-y-auto border border-gray-200 rounded-md">
               {students.length === 0 ? (
@@ -419,8 +587,20 @@ export default function EditClassGroupModal({
                         className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-gray-900">
-                          {student.name ?? "이름 없음"}
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm font-medium text-gray-900">
+                            {student.studentProfile?.studentId && (
+                              <span className="text-gray-500 mr-1">
+                                [{student.studentProfile.studentId}]
+                              </span>
+                            )}
+                            {student.name ?? "이름 없음"}
+                          </div>
+                          {studentClassGroupMap.has(student.id) && (
+                            <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 border border-blue-100">
+                              {studentClassGroupMap.get(student.id)}
+                            </span>
+                          )}
                         </div>
                         <div className="text-xs text-gray-500 truncate">
                           {student.email}
@@ -434,9 +614,14 @@ export default function EditClassGroupModal({
             {students.length > 0 && (
               <div className="mt-2 text-xs text-gray-500">
                 {selectedStudentIds.size}명 선택됨
-                {searchQuery && (
+                {(searchQuery || selectedClassGroupFilter) && (
                   <span className="ml-2">
-                    ({filteredStudents.length}명 검색됨)
+                    ({filteredStudents.length}명 표시됨
+                    {selectedFilteredCount > 0 && ` / ${selectedFilteredCount}명 선택됨`}
+                    {searchQuery && ` / 검색: "${searchQuery}"`}
+                    {selectedClassGroupFilter && 
+                      ` / 학반: ${classGroups.find(g => g.id === selectedClassGroupFilter)?.name || ""}`}
+                    )
                   </span>
                 )}
               </div>
@@ -476,6 +661,10 @@ export default function EditClassGroupModal({
         </form>
       </div>
     </div>
-  );
+  ) : null;
+
+  if (!mounted || typeof window === "undefined") return null;
+
+  return createPortal(modalContent, document.body);
 }
 
