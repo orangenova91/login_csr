@@ -75,7 +75,7 @@ export default async function ManageClassDetailPage({
     (await (prisma as any).classGroup.findMany({
       where: { courseId: course.id },
       select: { id: true, name: true },
-      orderBy: { createdAt: "asc" },
+      orderBy: { name: "asc" },
     })) ?? [];
 
   const students =
@@ -158,7 +158,7 @@ export default async function ManageClassDetailPage({
                   학반 ({classGroups.length}개)
                 </span>
                 <div className="flex flex-wrap gap-1">
-                  {classGroups.map((group) => (
+                  {classGroups.map((group: { id: string; name: string }) => (
                     <span
                       key={group.id}
                       className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-700 border border-gray-200"
