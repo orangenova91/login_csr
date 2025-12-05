@@ -21,6 +21,7 @@ import {
   HelpCircle,
   Shield,
   User,
+  MessageCircle,
 } from "lucide-react";
 
 export default async function DashboardLayout({
@@ -70,6 +71,11 @@ export default async function DashboardLayout({
             label: t.sidebar.teacher.announcements,
             icon: <Bell className="w-5 h-5" />
           },
+          {
+            href: "/dashboard/chat",
+            label: t.sidebar.teacher.chat,
+            icon: <MessageCircle className="w-5 h-5" />
+          },
         ]
       : role === "student"
       ? [
@@ -102,6 +108,11 @@ export default async function DashboardLayout({
             href: "/dashboard/student/profile",
             label: "프로필 수정",
             icon: <User className="w-5 h-5" />
+          },
+          {
+            href: "/dashboard/chat",
+            label: t.sidebar.student.chat,
+            icon: <MessageCircle className="w-5 h-5" />
           },
         ]
       : role === "admin"
@@ -136,6 +147,11 @@ export default async function DashboardLayout({
             label: "시스템 설정",
             icon: <Settings className="w-5 h-5" />,
           },
+          {
+            href: "/dashboard/chat",
+            label: t.sidebar.admin?.chat || "채팅",
+            icon: <MessageCircle className="w-5 h-5" />,
+          },
         ]
       : role === "superadmin"
       ? [
@@ -143,6 +159,11 @@ export default async function DashboardLayout({
             href: "/dashboard/superadmin",
             label: "슈퍼어드민 대시보드",
             icon: <Shield className="w-5 h-5" />,
+          },
+          {
+            href: "/dashboard/chat",
+            label: t.sidebar.superadmin?.chat || "채팅",
+            icon: <MessageCircle className="w-5 h-5" />,
           },
         ]
       : [];

@@ -121,6 +121,7 @@ export const translations = {
         studentProgress: "학생 성과",
         announcements: "공지 관리",
         schedule: "학사 일정",
+        chat: "채팅",
       },
       student: {
         overview: "대시보드 홈",
@@ -128,6 +129,13 @@ export const translations = {
         assignments: "자료 확인",
         announcements: "공지 보기",
         support: "문의하기",
+        chat: "채팅",
+      },
+      admin: {
+        chat: "채팅",
+      },
+      superadmin: {
+        chat: "채팅",
       },
     },
   },
@@ -250,6 +258,7 @@ export const translations = {
         studentProgress: "Student Progress",
         announcements: "Announcements",
         schedule: "Schedule",
+        chat: "Chat",
       },
       student: {
         overview: "Overview",
@@ -257,6 +266,13 @@ export const translations = {
         assignments: "Assignments",
         announcements: "Announcements",
         support: "Support",
+        chat: "Chat",
+      },
+      admin: {
+        chat: "Chat",
+      },
+      superadmin: {
+        chat: "Chat",
       },
     },
   },
